@@ -28,7 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -96,7 +96,12 @@ fun ScreenUseTab(state: InsightUiState) {
             },
         breakdown =
             if (isReady) {
-                { ScreenUseTabBarChart(points = state.screenTimePoints) }
+                {
+                    ScreenUseTabBarChart(
+                        points = state.screenTimePoints,
+                        moodPoints = if (state.weeklyMoodPoints.size == state.screenTimePoints.size) state.weeklyMoodPoints else emptyList(),
+                    )
+                }
             } else {
                 null
             },
@@ -143,7 +148,10 @@ private fun ScreenUseTabTrendPill(
 }
 
 @Composable
-private fun ScreenUseTabBarChart(points: List<ScreenTimeBarPoint>) {
+private fun ScreenUseTabBarChart(
+    points: List<ScreenTimeBarPoint>,
+    moodPoints: List<Float?> = emptyList(),
+) {
     if (points.isEmpty()) return
 
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -177,7 +185,13 @@ private fun ScreenUseTabBarChart(points: List<ScreenTimeBarPoint>) {
             }
 
             Row(
-                modifier = Modifier.weight(1f).fillMaxHeight().drawBehind { drawInsightGridLines() },
+                modifier = Modifier.weight(1f).fillMaxHeight().drawWithContent {
+                    drawContent()
+                    drawInsightGridLines()
+                    if (moodPoints.size == points.size) {
+                        drawMoodSparkline(moodPoints)
+                    }
+                },
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {

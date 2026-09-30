@@ -21,7 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -88,7 +88,12 @@ fun SleepTab(state: InsightUiState) {
             },
         breakdown =
             if (isReady) {
-                { SleepTabBarChart(points = state.sleepBarPoints) }
+                {
+                    SleepTabBarChart(
+                        points = state.sleepBarPoints,
+                        moodPoints = if (state.weeklyMoodPoints.size == state.sleepBarPoints.size) state.weeklyMoodPoints else emptyList(),
+                    )
+                }
             } else {
                 null
             },
@@ -134,7 +139,10 @@ private fun SleepTabTrendPill(
 }
 
 @Composable
-private fun SleepTabBarChart(points: List<SleepBarPoint>) {
+private fun SleepTabBarChart(
+    points: List<SleepBarPoint>,
+    moodPoints: List<Float?> = emptyList(),
+) {
     if (points.isEmpty()) return
 
     val maxDataMinutes = points.maxOfOrNull { it.totalSleepMinutes } ?: 0
@@ -167,7 +175,13 @@ private fun SleepTabBarChart(points: List<SleepBarPoint>) {
             }
 
             Row(
-                modifier = Modifier.weight(1f).fillMaxHeight().drawBehind { drawInsightGridLines() },
+                modifier = Modifier.weight(1f).fillMaxHeight().drawWithContent {
+                    drawContent()
+                    drawInsightGridLines()
+                    if (moodPoints.size == points.size) {
+                        drawMoodSparkline(moodPoints)
+                    }
+                },
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {

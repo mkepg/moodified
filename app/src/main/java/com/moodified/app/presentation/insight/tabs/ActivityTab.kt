@@ -28,7 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -101,7 +101,12 @@ fun ActivityTab(state: InsightUiState) {
             },
         breakdown =
             if (isReady) {
-                { ActivityTabStackedBarChart(points = state.activityBarPoints) }
+                {
+                    ActivityTabStackedBarChart(
+                        points = state.activityBarPoints,
+                        moodPoints = if (state.weeklyMoodPoints.size == state.activityBarPoints.size) state.weeklyMoodPoints else emptyList(),
+                    )
+                }
             } else {
                 null
             },
@@ -141,7 +146,10 @@ private fun ActivityTabTrendPill(
 }
 
 @Composable
-private fun ActivityTabStackedBarChart(points: List<ActivityBarPoint>) {
+private fun ActivityTabStackedBarChart(
+    points: List<ActivityBarPoint>,
+    moodPoints: List<Float?> = emptyList(),
+) {
     if (points.isEmpty()) return
 
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -175,7 +183,13 @@ private fun ActivityTabStackedBarChart(points: List<ActivityBarPoint>) {
             }
 
             Row(
-                modifier = Modifier.weight(1f).fillMaxHeight().drawBehind { drawInsightGridLines() },
+                modifier = Modifier.weight(1f).fillMaxHeight().drawWithContent {
+                    drawContent()
+                    drawInsightGridLines()
+                    if (moodPoints.size == points.size) {
+                        drawMoodSparkline(moodPoints)
+                    }
+                },
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {
