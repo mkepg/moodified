@@ -114,6 +114,9 @@ class InsightViewModel
                                     activityByDate[date],
                                     interactionByDate[date],
                                 ),
+                            sleepTrends = trends.sleep,
+                            activityTrends = trends.activity,
+                            interactionTrends = trends.interaction,
                         )
 
                     DailyInsightBundle(

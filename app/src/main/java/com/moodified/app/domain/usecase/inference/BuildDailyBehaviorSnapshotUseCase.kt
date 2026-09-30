@@ -5,6 +5,7 @@ import com.moodified.app.domain.repository.MoodRepository
 import com.moodified.app.domain.usecase.activity.GetDailyActivitySummaryUseCase
 import com.moodified.app.domain.usecase.activity.GetWeeklyActivityTrendsUseCase
 import com.moodified.app.domain.usecase.interaction.GetDailyInteractionSummaryUseCase
+import com.moodified.app.domain.usecase.interaction.GetWeeklyInteractionTrendsUseCase
 import com.moodified.app.domain.usecase.sleep.GetDailySleepSummaryUseCase
 import com.moodified.app.domain.usecase.sleep.GetWeeklySleepTrendsUseCase
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,7 @@ class BuildDailyBehaviorSnapshotUseCase
         private val getDailyInteractionSummary: GetDailyInteractionSummaryUseCase,
         private val getWeeklySleepTrends: GetWeeklySleepTrendsUseCase,
         private val getWeeklyActivityTrends: GetWeeklyActivityTrendsUseCase,
+        private val getWeeklyInteractionTrends: GetWeeklyInteractionTrendsUseCase,
         private val moodRepository: MoodRepository,
     ) {
         operator fun invoke(date: LocalDate): Flow<DailyBehaviorSnapshot> {
@@ -40,7 +42,8 @@ class BuildDailyBehaviorSnapshotUseCase
                     getWeeklyActivityTrends(date).catch { emit(null) },
                     ::Triple,
                 ),
-            ) { (sleepSummary, activitySummary, interactionSummary), (moodEntries, sleepTrends, activityTrends) ->
+                getWeeklyInteractionTrends(date).catch { emit(null) },
+            ) { (sleepSummary, activitySummary, interactionSummary), (moodEntries, sleepTrends, activityTrends), interactionTrends ->
                 DailyBehaviorSnapshot(
                     targetDate = date,
                     sleepSummary = sleepSummary,
@@ -55,6 +58,7 @@ class BuildDailyBehaviorSnapshotUseCase
                         ),
                     sleepTrends = sleepTrends,
                     activityTrends = activityTrends,
+                    interactionTrends = interactionTrends,
                 )
             }.flowOn(Dispatchers.IO)
         }
