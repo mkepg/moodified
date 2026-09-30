@@ -1,5 +1,6 @@
 package com.moodified.app.domain.usecase.sleep
 
+import com.moodified.app.domain.model.sleep.DailySleepSummary
 import com.moodified.app.domain.model.sleep.SleepTrends
 import com.moodified.app.domain.repository.SleepRepository
 import com.moodified.app.domain.usecase.inference.InferenceConstants
@@ -80,8 +81,29 @@ class GetWeeklySleepTrendsUseCase
                     totalSleepDebtMinutes = runningDebt,
                     consistencyScore = consistencyScore,
                     sleepGoalMinutes = DEFAULT_BASELINE_MINUTES,
+                    inferredSleepGoalMinutes = computeInferredSleepGoal(cappedSummaries),
+                    baselineSleepOnsetMinutes = computeBaselineOnset(cappedSummaries),
                 )
             }
+        }
+
+        internal fun computeInferredSleepGoal(summaries: List<DailySleepSummary>): Int {
+            val durations = summaries.map { it.totalSleepMinutes }.filter { it > 0 }
+            if (durations.size < 5) return DEFAULT_BASELINE_MINUTES
+            val sorted = durations.sorted()
+            val trimmed = sorted.drop(1).dropLast(1)
+            return trimmed.average().roundToInt()
+        }
+
+        internal fun computeBaselineOnset(summaries: List<DailySleepSummary>): Int? {
+            val onsets = summaries.mapNotNull { it.sleepOnsetMinutes }.filter { it >= 0 }
+            if (onsets.isEmpty()) return null
+            var ema = onsets.first().toDouble()
+            onsets.drop(1).forEach { onset ->
+                val alpha = if (onset > ema) InferenceConstants.EMA_ALPHA_UP else InferenceConstants.EMA_ALPHA_DOWN
+                ema = alpha * onset + (1.0 - alpha) * ema
+            }
+            return ema.roundToInt()
         }
 
         private fun calculateAsymmetricEma(

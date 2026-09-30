@@ -49,4 +49,6 @@ data class SleepTrends(
     val totalSleepDebtMinutes: Int,
     val consistencyScore: Int,
     val sleepGoalMinutes: Int = 480,
+    val inferredSleepGoalMinutes: Int = 480,
+    val baselineSleepOnsetMinutes: Int? = null,
 )
