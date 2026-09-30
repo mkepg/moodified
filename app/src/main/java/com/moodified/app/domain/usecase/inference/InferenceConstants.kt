@@ -55,4 +55,22 @@ internal object InferenceConstants {
     const val MANUAL_ENTRY_BONUS_PER_ENTRY = 8
     const val MANUAL_ENTRY_BONUS_MAX_ENTRIES = 2
     const val MIN_COMPLETENESS_FOR_INFERENCE = 30
+
+    // Consistency bonus thresholds
+    const val CONSISTENCY_BONUS_THRESHOLD = 80
+    const val SLEEP_CONSISTENCY_BONUS = 3
+    const val ACTIVITY_CONSISTENCY_BONUS = 3
+
+    // Chronotype-aware late bedtime offset (minutes past personal baseline)
+    const val LATE_BEDTIME_OFFSET_MINUTES = 60
+
+    // Dynamic screen-time multipliers (relative to personal average)
+    const val DYNAMIC_HIGH_SCREEN_TIME_MULTIPLIER = 1.25f
+    const val DYNAMIC_HIGH_LATE_NIGHT_MULTIPLIER = 1.50f
+
+    // Calibration constants (used in Task 7)
+    const val CALIBRATION_BASE_NUDGE = 0.04f
+    const val CALIBRATION_DECAY_RATE = 0.05f
+    const val CALIBRATION_MIN_CONFIDENCE = 30
+    const val CALIBRATION_MIN_COMPLETENESS = 30
 }

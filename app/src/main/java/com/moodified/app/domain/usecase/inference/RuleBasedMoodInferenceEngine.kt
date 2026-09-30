@@ -34,14 +34,16 @@ class RuleBasedMoodInferenceEngine
             val events = mutableListOf<ScoringEvent>()
 
             // 1. Sleep Evaluation
+            val sleepGoal = snapshot.sleepTrends?.inferredSleepGoalMinutes ?: InferenceConstants.GOOD_SLEEP_MINUTES_MIN
+
             val sleepBaseline =
                 snapshot.sleepTrends?.averageSleepMinutes?.takeIf { it > 0 }
-                    ?: InferenceConstants.GOOD_SLEEP_MINUTES_MIN
+                    ?: sleepGoal
 
             val rawDynamicPoor = (sleepBaseline * InferenceConstants.DYNAMIC_POOR_SLEEP_MULTIPLIER).toInt()
             val dynamicPoorSleepThreshold =
-                if (rawDynamicPoor > InferenceConstants.GOOD_SLEEP_MINUTES_MIN) {
-                    InferenceConstants.GOOD_SLEEP_MINUTES_MIN
+                if (rawDynamicPoor > sleepGoal) {
+                    sleepGoal
                 } else {
                     rawDynamicPoor.coerceAtLeast(180)
                 }
@@ -57,13 +59,20 @@ class RuleBasedMoodInferenceEngine
             val activeMinBaseline = snapshot.activityTrends?.averageActiveMinutes?.takeIf { it > 0 } ?: InferenceConstants.HIGH_ACTIVITY_MINUTES
             val dynamicHighActive = (activeMinBaseline * InferenceConstants.DYNAMIC_HIGH_ACTIVITY_MULTIPLIER).toInt()
 
+            val highScreenThreshold = snapshot.interactionTrends?.averageScreenTimeMinutes
+                ?.times(InferenceConstants.DYNAMIC_HIGH_SCREEN_TIME_MULTIPLIER)?.toInt()
+                ?: InferenceConstants.HIGH_SCREEN_TIME_MINUTES
+            val highLateNightThreshold = snapshot.interactionTrends?.averageLateNightMinutes
+                ?.let { if (it > 0) (it * InferenceConstants.DYNAMIC_HIGH_LATE_NIGHT_MULTIPLIER).toInt() else InferenceConstants.LATE_NIGHT_MINUTES_THRESHOLD }
+                ?: InferenceConstants.LATE_NIGHT_MINUTES_THRESHOLD
+
             // Digital fatigue captures chronic-day screen habits (heavy total use or
             // restless-scrolling patterns). Late-night usage is handled by its own direct
             // rule in the interaction block — keeping it out of this gate avoids
             // compound-penalizing a single late-night signal in two places.
             val isDigitallyFatigued =
                 snapshot.interactionSummary?.let {
-                    it.totalScreenTimeMinutes > InferenceConstants.HIGH_SCREEN_TIME_MINUTES ||
+                    it.totalScreenTimeMinutes > highScreenThreshold ||
                         (it.sessionCount > InferenceConstants.HIGH_SESSION_COUNT && it.averageSessionDurationMinutes < InferenceConstants.SHORT_SESSION_DURATION_MINUTES)
                 } ?: false
 
@@ -101,11 +110,13 @@ class RuleBasedMoodInferenceEngine
                     events += ScoringEvent(description, -valencePenalty, -arousalPenalty, domain = InferenceDomain.SLEEP)
                 }
 
-                // Late bedtime signal. Onset ≥ 1AM (see LATE_BEDTIME_MINUTES) tends to
+                // Late bedtime signal. Onset past the personal baseline + offset tends to
                 // depress next-day valence and slightly elevate arousal (residual wired
                 // feeling from delayed wind-down).
+                val lateBedtimeThreshold = (snapshot.sleepTrends?.baselineSleepOnsetMinutes
+                    ?: InferenceConstants.LATE_BEDTIME_MINUTES) + InferenceConstants.LATE_BEDTIME_OFFSET_MINUTES
                 val onset = sleep.sleepOnsetMinutes
-                if (onset != null && onset >= InferenceConstants.LATE_BEDTIME_MINUTES) {
+                if (onset != null && onset >= lateBedtimeThreshold) {
                     valenceScore -= 5
                     arousalScore += 3
                     events += ScoringEvent("unusually late bedtime", -5, 3, domain = InferenceDomain.SLEEP)
@@ -172,7 +183,7 @@ class RuleBasedMoodInferenceEngine
 
             // --- Apply Interaction Rules ---
             snapshot.interactionSummary?.let { interaction ->
-                if (interaction.lateNightUsageMinutes > InferenceConstants.LATE_NIGHT_MINUTES_THRESHOLD) {
+                if (interaction.lateNightUsageMinutes > highLateNightThreshold) {
                     valenceScore -= 10
                     arousalScore += 5
                     events += ScoringEvent("late-night screen usage", -10, 5, domain = InferenceDomain.SCREEN)
@@ -207,6 +218,28 @@ class RuleBasedMoodInferenceEngine
                     valenceScore -= 5
                     events += ScoringEvent("low activity consistency this week", -5, 0, domain = InferenceDomain.ACTIVITY)
                 }
+            }
+
+            // Sleep consistency bonus
+            val sleepConsistency = snapshot.sleepTrends?.consistencyScore ?: 0
+            if (sleepConsistency > InferenceConstants.CONSISTENCY_BONUS_THRESHOLD) {
+                events += ScoringEvent(
+                    description = "consistent sleep schedule this week",
+                    valenceDelta = InferenceConstants.SLEEP_CONSISTENCY_BONUS,
+                    domain = InferenceDomain.SLEEP,
+                )
+                valenceScore += InferenceConstants.SLEEP_CONSISTENCY_BONUS
+            }
+
+            // Activity consistency bonus
+            val activityConsistency = snapshot.activityTrends?.consistencyScore ?: 0
+            if (activityConsistency > InferenceConstants.CONSISTENCY_BONUS_THRESHOLD) {
+                events += ScoringEvent(
+                    description = "consistent activity rhythm this week",
+                    valenceDelta = InferenceConstants.ACTIVITY_CONSISTENCY_BONUS,
+                    domain = InferenceDomain.ACTIVITY,
+                )
+                valenceScore += InferenceConstants.ACTIVITY_CONSISTENCY_BONUS
             }
 
             // Clamp before mapping: unclamped scores work correctly for threshold-based
