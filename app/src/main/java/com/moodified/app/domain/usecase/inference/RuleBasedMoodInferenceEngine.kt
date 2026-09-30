@@ -2,6 +2,7 @@ package com.moodified.app.domain.usecase.inference
 
 import com.moodified.app.domain.model.activity.ActivityIntensity
 import com.moodified.app.domain.model.inference.DailyBehaviorSnapshot
+import com.moodified.app.domain.model.inference.InferenceDomain
 import com.moodified.app.domain.model.inference.InferredMoodState
 import com.moodified.app.domain.model.inference.ScoringEvent
 import com.moodified.app.domain.model.mood.Arousal
@@ -77,10 +78,10 @@ class RuleBasedMoodInferenceEngine
                 if (isSleepDeprived) {
                     valenceScore -= 12
                     arousalScore -= 8
-                    events += ScoringEvent("shorter sleep than your usual", -12, -8)
+                    events += ScoringEvent("shorter sleep than your usual", -12, -8, domain = InferenceDomain.SLEEP)
                 } else if (sleep.totalSleepMinutes >= dynamicGoodSleepMin && sleep.awakenings <= 1) {
                     valenceScore += 15
-                    events += ScoringEvent("solid, restful sleep", 15, 0)
+                    events += ScoringEvent("solid, restful sleep", 15, 0, domain = InferenceDomain.SLEEP)
                 }
 
                 // Restless-sleep event fires independently so short + fragmented nights get
@@ -97,7 +98,7 @@ class RuleBasedMoodInferenceEngine
                         }
                     valenceScore -= valencePenalty
                     arousalScore -= arousalPenalty
-                    events += ScoringEvent(description, -valencePenalty, -arousalPenalty)
+                    events += ScoringEvent(description, -valencePenalty, -arousalPenalty, domain = InferenceDomain.SLEEP)
                 }
 
                 // Late bedtime signal. Onset ≥ 1AM (see LATE_BEDTIME_MINUTES) tends to
@@ -107,7 +108,7 @@ class RuleBasedMoodInferenceEngine
                 if (onset != null && onset >= InferenceConstants.LATE_BEDTIME_MINUTES) {
                     valenceScore -= 5
                     arousalScore += 3
-                    events += ScoringEvent("unusually late bedtime", -5, 3)
+                    events += ScoringEvent("unusually late bedtime", -5, 3, domain = InferenceDomain.SLEEP)
                 }
             }
 
@@ -120,11 +121,11 @@ class RuleBasedMoodInferenceEngine
                     if (isSleepDeprived) {
                         arousalScore -= 10
                         valenceScore -= 5
-                        events += ScoringEvent("pushing hard on low sleep", -5, -10)
+                        events += ScoringEvent("pushing hard on low sleep", -5, -10, domain = InferenceDomain.ACTIVITY)
                     } else {
                         arousalScore += 20
                         valenceScore += 15
-                        events += ScoringEvent("higher physical activity than usual", 15, 20)
+                        events += ScoringEvent("higher physical activity than usual", 15, 20, domain = InferenceDomain.ACTIVITY)
                     }
                 }
 
@@ -132,10 +133,10 @@ class RuleBasedMoodInferenceEngine
                     if (isDigitallyFatigued) {
                         arousalScore -= 12
                         valenceScore -= 8
-                        events += ScoringEvent("prolonged inactivity with digital fatigue", -8, -12)
+                        events += ScoringEvent("prolonged inactivity with digital fatigue", -8, -12, domain = InferenceDomain.ACTIVITY)
                     } else {
                         arousalScore -= 5
-                        events += ScoringEvent("prolonged period of focus or rest", 0, -5)
+                        events += ScoringEvent("prolonged period of focus or rest", 0, -5, domain = InferenceDomain.ACTIVITY)
                     }
                 }
 
@@ -149,12 +150,12 @@ class RuleBasedMoodInferenceEngine
                     val decayedValence = applyFloorDecay(6, estimatedHoursElapsed)
                     arousalScore += decayedArousal
                     valenceScore += decayedValence
-                    events += ScoringEvent("vigorous exercise earlier today", decayedValence, decayedArousal)
+                    events += ScoringEvent("vigorous exercise earlier today", decayedValence, decayedArousal, domain = InferenceDomain.ACTIVITY)
                 }
 
                 if (activity.totalSteps > dynamicHighSteps) {
                     valenceScore += 5
-                    events += ScoringEvent("surpassed your usual step count", 5, 0)
+                    events += ScoringEvent("surpassed your usual step count", 5, 0, domain = InferenceDomain.ACTIVITY)
                 }
 
                 // Ratio semantics: vehicle time as a share of the *whole* tracked day
@@ -165,7 +166,7 @@ class RuleBasedMoodInferenceEngine
                 val vehicleRatio = if (totalTrackedMinutes > 0) commuteMins.toFloat() / totalTrackedMinutes else 0f
                 if (commuteMins > InferenceConstants.LONG_COMMUTE_MINUTES && vehicleRatio < 0.25f) {
                     valenceScore -= 5
-                    events += ScoringEvent("long commute", -5, 0)
+                    events += ScoringEvent("long commute", -5, 0, domain = InferenceDomain.ACTIVITY)
                 }
             }
 
@@ -174,7 +175,7 @@ class RuleBasedMoodInferenceEngine
                 if (interaction.lateNightUsageMinutes > InferenceConstants.LATE_NIGHT_MINUTES_THRESHOLD) {
                     valenceScore -= 10
                     arousalScore += 5
-                    events += ScoringEvent("late-night screen usage", -10, 5)
+                    events += ScoringEvent("late-night screen usage", -10, 5, domain = InferenceDomain.SCREEN)
                 }
             }
 
@@ -196,7 +197,7 @@ class RuleBasedMoodInferenceEngine
 
                     if (logisticPenalty > 0) {
                         valenceScore -= logisticPenalty
-                        events += ScoringEvent("lingering fatigue from accumulated sleep debt", -logisticPenalty, 0)
+                        events += ScoringEvent("lingering fatigue from accumulated sleep debt", -logisticPenalty, 0, domain = InferenceDomain.SLEEP)
                     }
                 }
             }
@@ -204,7 +205,7 @@ class RuleBasedMoodInferenceEngine
             snapshot.activityTrends?.let { trends ->
                 if (trends.consistencyScore < InferenceConstants.LOW_ACTIVITY_CONSISTENCY_THRESHOLD) {
                     valenceScore -= 5
-                    events += ScoringEvent("low activity consistency this week", -5, 0)
+                    events += ScoringEvent("low activity consistency this week", -5, 0, domain = InferenceDomain.ACTIVITY)
                 }
             }
 
