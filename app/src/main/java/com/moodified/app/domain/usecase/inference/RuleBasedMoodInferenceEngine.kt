@@ -133,7 +133,7 @@ class RuleBasedMoodInferenceEngine
                     if (isDigitallyFatigued) {
                         arousalScore -= 12
                         valenceScore -= 8
-                        events += ScoringEvent("prolonged inactivity with digital fatigue", -8, -12, domain = InferenceDomain.ACTIVITY)
+                        events += ScoringEvent("prolonged inactivity with digital fatigue", -8, -12, domain = InferenceDomain.SCREEN)
                     } else {
                         arousalScore -= 5
                         events += ScoringEvent("prolonged period of focus or rest", 0, -5, domain = InferenceDomain.ACTIVITY)
