@@ -150,6 +150,7 @@ data class InsightUiState(
     val daysWithData: Int = 0,
     val moodStability: MoodStability? = null,
     val todayTimeline: List<IntradayTimelineEvent> = emptyList(),
+    val weeklyMoodPoints: List<Float?> = emptyList(),
 ) {
     val hasEnoughData: Boolean get() = domainReadiness.anyReady
 }
