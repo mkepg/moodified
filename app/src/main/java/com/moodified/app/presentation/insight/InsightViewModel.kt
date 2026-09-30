@@ -3,9 +3,11 @@ package com.moodified.app.presentation.insight
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.moodified.app.core.utils.midnightTickerFlow
+import com.moodified.app.data.local.datasource.CalibrationPreferencesDataSource
 import com.moodified.app.domain.model.activity.ActivityBlock
 import com.moodified.app.domain.model.activity.ActivityDailySummary
 import com.moodified.app.domain.model.activity.ActivityIntensity
+import com.moodified.app.domain.model.inference.CalibrationWeights
 import com.moodified.app.domain.model.inference.DailyBehaviorSnapshot
 import com.moodified.app.domain.model.interaction.InteractionDailySummary
 import com.moodified.app.domain.model.interaction.InteractionSession
@@ -44,6 +46,7 @@ class InsightViewModel
         private val sleepRepository: SleepRepository,
         private val activityRepository: ActivityRepository,
         private val interactionRepository: InteractionRepository,
+        private val calibrationSource: CalibrationPreferencesDataSource,
     ) : ViewModel() {
         val uiState: StateFlow<InsightUiState> =
             midnightTickerFlow()
@@ -76,8 +79,8 @@ class InsightViewModel
                             TodayDetailedEvents(sleepSegments, interactionSessions, activityBlocks)
                         }
 
-                    combine(rawDataFlow, trendsFlow, todayEventsFlow) { raw, trends, todayEvents ->
-                        buildState(raw, trends, todayEvents, today)
+                    combine(rawDataFlow, trendsFlow, todayEventsFlow, calibrationSource.flow()) { raw, trends, events, calibration ->
+                        buildState(raw, trends, events, today, calibration)
                     }
                 }
                 .stateIn(
@@ -91,6 +94,7 @@ class InsightViewModel
             trends: WeeklyTrends,
             todayEvents: TodayDetailedEvents,
             today: LocalDate,
+            calibration: CalibrationWeights = CalibrationWeights(),
         ): InsightUiState {
             val last7Days = (0L until 7L).map { today.minusDays(it) }
 
@@ -125,7 +129,7 @@ class InsightViewModel
                         sleepSummary = sleepByDate[date],
                         activitySummary = activityByDate[date],
                         interactionSummary = interactionByDate[date],
-                        inferredMood = runCatching { inferenceEngine(snapshot) }.getOrNull(),
+                        inferredMood = runCatching { inferenceEngine(snapshot, calibration) }.getOrNull(),
                     )
                 }
 

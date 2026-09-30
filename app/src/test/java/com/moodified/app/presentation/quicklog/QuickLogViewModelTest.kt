@@ -4,6 +4,8 @@ import com.moodified.app.domain.model.mood.Arousal
 import com.moodified.app.domain.model.mood.MoodEntry
 import com.moodified.app.domain.model.mood.Valence
 import com.moodified.app.domain.repository.MoodRepository
+import com.moodified.app.domain.usecase.inference.FeedbackCalibrationUseCase
+import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -30,12 +32,13 @@ class QuickLogViewModelTest {
     private lateinit var repo: FakeMoodRepository
     private lateinit var vm: QuickLogViewModel
     private val dispatcher = StandardTestDispatcher()
+    private val fakeFeedbackCalibration: FeedbackCalibrationUseCase = mockk(relaxed = true)
 
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         repo = FakeMoodRepository()
-        vm = QuickLogViewModel(repo)
+        vm = QuickLogViewModel(repo, fakeFeedbackCalibration)
     }
 
     @After

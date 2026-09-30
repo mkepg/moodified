@@ -1,6 +1,7 @@
 package com.moodified.app.domain.usecase.inference
 
 import com.moodified.app.domain.model.activity.ActivityIntensity
+import com.moodified.app.domain.model.inference.CalibrationWeights
 import com.moodified.app.domain.model.inference.DailyBehaviorSnapshot
 import com.moodified.app.domain.model.inference.InferenceDomain
 import com.moodified.app.domain.model.inference.InferredMoodState
@@ -11,6 +12,7 @@ import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 class RuleBasedMoodInferenceEngine
     @Inject
@@ -18,20 +20,21 @@ class RuleBasedMoodInferenceEngine
         private val interpreter: MoodStateInterpreter,
         private val explainer: MoodExplainabilityGenerator,
     ) {
-        operator fun invoke(snapshot: DailyBehaviorSnapshot): InferredMoodState {
+        operator fun invoke(
+            snapshot: DailyBehaviorSnapshot,
+            calibration: CalibrationWeights = CalibrationWeights(),
+        ): InferredMoodState {
             if (snapshot.moodEntries.isNotEmpty()) return deriveFromManualEntries(snapshot)
 
             if (snapshot.dataCompletenessScore < InferenceConstants.MIN_COMPLETENESS_FOR_INFERENCE) {
                 return generateFallbackState(snapshot)
             }
 
-            return runPassiveInference(snapshot)
+            return runPassiveInference(snapshot, calibration)
         }
 
-        private fun runPassiveInference(snapshot: DailyBehaviorSnapshot): InferredMoodState {
-            var valenceScore = InferenceConstants.BASE_SCORE
-            var arousalScore = InferenceConstants.BASE_SCORE
-            val events = mutableListOf<ScoringEvent>()
+        private fun runPassiveInference(snapshot: DailyBehaviorSnapshot, calibration: CalibrationWeights): InferredMoodState {
+            val scoringEvents = mutableListOf<ScoringEvent>()
 
             // 1. Sleep Evaluation
             val sleepGoal = snapshot.sleepTrends?.inferredSleepGoalMinutes ?: InferenceConstants.GOOD_SLEEP_MINUTES_MIN
@@ -85,12 +88,9 @@ class RuleBasedMoodInferenceEngine
             // Awakening count is the direct, well-measured proxy for restless sleep.
             snapshot.sleepSummary?.let { sleep ->
                 if (isSleepDeprived) {
-                    valenceScore -= 12
-                    arousalScore -= 8
-                    events += ScoringEvent("shorter sleep than your usual", -12, -8, domain = InferenceDomain.SLEEP)
+                    scoringEvents += ScoringEvent("shorter sleep than your usual", -12, -8, domain = InferenceDomain.SLEEP)
                 } else if (sleep.totalSleepMinutes >= dynamicGoodSleepMin && sleep.awakenings <= 1) {
-                    valenceScore += 15
-                    events += ScoringEvent("solid, restful sleep", 15, 0, domain = InferenceDomain.SLEEP)
+                    scoringEvents += ScoringEvent("solid, restful sleep", 15, 0, domain = InferenceDomain.SLEEP)
                 }
 
                 // Restless-sleep event fires independently so short + fragmented nights get
@@ -105,9 +105,7 @@ class RuleBasedMoodInferenceEngine
                         } else {
                             "restless sleep with frequent awakenings"
                         }
-                    valenceScore -= valencePenalty
-                    arousalScore -= arousalPenalty
-                    events += ScoringEvent(description, -valencePenalty, -arousalPenalty, domain = InferenceDomain.SLEEP)
+                    scoringEvents += ScoringEvent(description, -valencePenalty, -arousalPenalty, domain = InferenceDomain.SLEEP)
                 }
 
                 // Late bedtime signal. Onset past the personal baseline + offset tends to
@@ -117,9 +115,7 @@ class RuleBasedMoodInferenceEngine
                     ?: InferenceConstants.LATE_BEDTIME_MINUTES) + InferenceConstants.LATE_BEDTIME_OFFSET_MINUTES
                 val onset = sleep.sleepOnsetMinutes
                 if (onset != null && onset >= lateBedtimeThreshold) {
-                    valenceScore -= 5
-                    arousalScore += 3
-                    events += ScoringEvent("unusually late bedtime", -5, 3, domain = InferenceDomain.SLEEP)
+                    scoringEvents += ScoringEvent("unusually late bedtime", -5, 3, domain = InferenceDomain.SLEEP)
                 }
             }
 
@@ -130,24 +126,17 @@ class RuleBasedMoodInferenceEngine
 
                 if (activity.activeMinutes > dynamicHighActive) {
                     if (isSleepDeprived) {
-                        arousalScore -= 10
-                        valenceScore -= 5
-                        events += ScoringEvent("pushing hard on low sleep", -5, -10, domain = InferenceDomain.ACTIVITY)
+                        scoringEvents += ScoringEvent("pushing hard on low sleep", -5, -10, domain = InferenceDomain.ACTIVITY)
                     } else {
-                        arousalScore += 20
-                        valenceScore += 15
-                        events += ScoringEvent("higher physical activity than usual", 15, 20, domain = InferenceDomain.ACTIVITY)
+                        scoringEvents += ScoringEvent("higher physical activity than usual", 15, 20, domain = InferenceDomain.ACTIVITY)
                     }
                 }
 
                 if (activity.sedentaryMinutes > InferenceConstants.SEDENTARY_MINUTES_THRESHOLD) {
                     if (isDigitallyFatigued) {
-                        arousalScore -= 12
-                        valenceScore -= 8
-                        events += ScoringEvent("prolonged inactivity with digital fatigue", -8, -12, domain = InferenceDomain.SCREEN)
+                        scoringEvents += ScoringEvent("prolonged inactivity with digital fatigue", -8, -12, domain = InferenceDomain.SCREEN)
                     } else {
-                        arousalScore -= 5
-                        events += ScoringEvent("prolonged period of focus or rest", 0, -5, domain = InferenceDomain.ACTIVITY)
+                        scoringEvents += ScoringEvent("prolonged period of focus or rest", 0, -5, domain = InferenceDomain.ACTIVITY)
                     }
                 }
 
@@ -159,14 +148,11 @@ class RuleBasedMoodInferenceEngine
                     val estimatedHoursElapsed = 6f
                     val decayedArousal = applyFloorDecay(15, estimatedHoursElapsed)
                     val decayedValence = applyFloorDecay(6, estimatedHoursElapsed)
-                    arousalScore += decayedArousal
-                    valenceScore += decayedValence
-                    events += ScoringEvent("vigorous exercise earlier today", decayedValence, decayedArousal, domain = InferenceDomain.ACTIVITY)
+                    scoringEvents += ScoringEvent("vigorous exercise earlier today", decayedValence, decayedArousal, domain = InferenceDomain.ACTIVITY)
                 }
 
                 if (activity.totalSteps > dynamicHighSteps) {
-                    valenceScore += 5
-                    events += ScoringEvent("surpassed your usual step count", 5, 0, domain = InferenceDomain.ACTIVITY)
+                    scoringEvents += ScoringEvent("surpassed your usual step count", 5, 0, domain = InferenceDomain.ACTIVITY)
                 }
 
                 // Ratio semantics: vehicle time as a share of the *whole* tracked day
@@ -176,17 +162,14 @@ class RuleBasedMoodInferenceEngine
                 val totalTrackedMinutes = activity.activeMinutes + activity.sedentaryMinutes + commuteMins
                 val vehicleRatio = if (totalTrackedMinutes > 0) commuteMins.toFloat() / totalTrackedMinutes else 0f
                 if (commuteMins > InferenceConstants.LONG_COMMUTE_MINUTES && vehicleRatio < 0.25f) {
-                    valenceScore -= 5
-                    events += ScoringEvent("long commute", -5, 0, domain = InferenceDomain.ACTIVITY)
+                    scoringEvents += ScoringEvent("long commute", -5, 0, domain = InferenceDomain.ACTIVITY)
                 }
             }
 
             // --- Apply Interaction Rules ---
             snapshot.interactionSummary?.let { interaction ->
                 if (interaction.lateNightUsageMinutes > highLateNightThreshold) {
-                    valenceScore -= 10
-                    arousalScore += 5
-                    events += ScoringEvent("late-night screen usage", -10, 5, domain = InferenceDomain.SCREEN)
+                    scoringEvents += ScoringEvent("late-night screen usage", -10, 5, domain = InferenceDomain.SCREEN)
                 }
             }
 
@@ -207,48 +190,60 @@ class RuleBasedMoodInferenceEngine
                     }
 
                     if (logisticPenalty > 0) {
-                        valenceScore -= logisticPenalty
-                        events += ScoringEvent("lingering fatigue from accumulated sleep debt", -logisticPenalty, 0, domain = InferenceDomain.SLEEP)
+                        scoringEvents += ScoringEvent("lingering fatigue from accumulated sleep debt", -logisticPenalty, 0, domain = InferenceDomain.SLEEP)
                     }
                 }
             }
 
             snapshot.activityTrends?.let { trends ->
                 if (trends.consistencyScore < InferenceConstants.LOW_ACTIVITY_CONSISTENCY_THRESHOLD) {
-                    valenceScore -= 5
-                    events += ScoringEvent("low activity consistency this week", -5, 0, domain = InferenceDomain.ACTIVITY)
+                    scoringEvents += ScoringEvent("low activity consistency this week", -5, 0, domain = InferenceDomain.ACTIVITY)
                 }
             }
 
             // Sleep consistency bonus
             val sleepConsistency = snapshot.sleepTrends?.consistencyScore ?: 0
             if (sleepConsistency > InferenceConstants.CONSISTENCY_BONUS_THRESHOLD) {
-                events += ScoringEvent(
+                scoringEvents += ScoringEvent(
                     description = "consistent sleep schedule this week",
                     valenceDelta = InferenceConstants.SLEEP_CONSISTENCY_BONUS,
                     domain = InferenceDomain.SLEEP,
                 )
-                valenceScore += InferenceConstants.SLEEP_CONSISTENCY_BONUS
             }
 
             // Activity consistency bonus
             val activityConsistency = snapshot.activityTrends?.consistencyScore ?: 0
             if (activityConsistency > InferenceConstants.CONSISTENCY_BONUS_THRESHOLD) {
-                events += ScoringEvent(
+                scoringEvents += ScoringEvent(
                     description = "consistent activity rhythm this week",
                     valenceDelta = InferenceConstants.ACTIVITY_CONSISTENCY_BONUS,
                     domain = InferenceDomain.ACTIVITY,
                 )
-                valenceScore += InferenceConstants.ACTIVITY_CONSISTENCY_BONUS
             }
+
+            // Apply per-domain calibration multipliers
+            val calibratedEvents = scoringEvents.map { event ->
+                val multiplier = when (event.domain) {
+                    InferenceDomain.SLEEP -> calibration.sleepMultiplier
+                    InferenceDomain.ACTIVITY -> calibration.activityMultiplier
+                    InferenceDomain.SCREEN -> calibration.screenMultiplier
+                    InferenceDomain.OTHER -> 1.0f
+                }
+                event.copy(
+                    valenceDelta = (event.valenceDelta * multiplier).roundToInt(),
+                    arousalDelta = (event.arousalDelta * multiplier).roundToInt(),
+                )
+            }
+            val valenceScore = (InferenceConstants.BASE_SCORE + calibratedEvents.sumOf { it.valenceDelta }).coerceIn(0, 100)
+            val arousalScore = (InferenceConstants.BASE_SCORE + calibratedEvents.sumOf { it.arousalDelta }).coerceIn(0, 100)
 
             // Clamp before mapping: unclamped scores work correctly for threshold-based
             // classification, but bounded scores keep the ranges honest for any future
             // fine-grained interpretation (e.g. a valenceScore of -20 shouldn't linguistically
             // outrank one of 30 — both are just NEGATIVE).
-            val finalValence = mapScoreToValence(valenceScore.coerceIn(0, 100))
-            val finalArousal = mapScoreToArousal(arousalScore.coerceIn(0, 100))
-            val sortedEvents = events.sortedByDescending { abs(it.valenceDelta) + abs(it.arousalDelta) }
+            val finalValence = mapScoreToValence(valenceScore)
+            val finalArousal = mapScoreToArousal(arousalScore)
+            val sortedEvents = calibratedEvents.sortedByDescending { abs(it.valenceDelta) + abs(it.arousalDelta) }
 
             return InferredMoodState(
                 valence = finalValence,

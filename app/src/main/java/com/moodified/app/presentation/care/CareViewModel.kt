@@ -3,6 +3,7 @@ package com.moodified.app.presentation.care
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.moodified.app.core.utils.midnightTickerFlow
+import com.moodified.app.data.local.datasource.CalibrationPreferencesDataSource
 import com.moodified.app.data.local.datasource.CarePreferencesDataSource
 import com.moodified.app.domain.model.activity.ActivityDailySummary
 import com.moodified.app.domain.model.interaction.InteractionDailySummary
@@ -47,6 +48,7 @@ class CareViewModel
         private val getWeeklyInteractionSummaries: GetWeeklyInteractionSummariesUseCase,
         private val getMoodHistory: GetMoodHistoryUseCase,
         private val carePreferences: CarePreferencesDataSource,
+        private val calibrationSource: CalibrationPreferencesDataSource,
     ) : ViewModel() {
         private val refreshTrigger = MutableStateFlow(System.currentTimeMillis())
         private val _activeDomain = MutableStateFlow(carePreferences.activeDomain)
@@ -85,13 +87,21 @@ class CareViewModel
                             Pair(snapshot, history)
                         }.debounce(250)
 
+                    val synchronizedWithCalibrationFlow =
+                        combine(
+                            synchronizedDbFlow,
+                            calibrationSource.flow(),
+                        ) { snapshotAndHistory, calibration ->
+                            Triple(snapshotAndHistory.first, snapshotAndHistory.second, calibration)
+                        }
+
                     combine(
-                        synchronizedDbFlow,
+                        synchronizedWithCalibrationFlow,
                         observeActivitySignal(),
                         observeInteractionSignal(),
                         _activeDomain,
                         _dismissedIds,
-                    ) { (snapshot, history), activity, interaction, domain, dismissedIds ->
+                    ) { (snapshot, history, calibration), activity, interaction, domain, dismissedIds ->
 
                         val sleepDays = history.sleep.size
                         val phoneDays = history.interaction.size
@@ -106,7 +116,7 @@ class CareViewModel
                                 mood = DomainReadiness(isReady = manualMoodDays >= 3, daysWithData = manualMoodDays, requiredDays = 3),
                             )
 
-                        val moodState = ruleBasedMoodInferenceEngine(snapshot)
+                        val moodState = ruleBasedMoodInferenceEngine(snapshot, calibration)
 
                         val actions =
                             careEvaluationEngine(

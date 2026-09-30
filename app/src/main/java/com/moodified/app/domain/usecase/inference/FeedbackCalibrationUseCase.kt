@@ -26,7 +26,7 @@ class FeedbackCalibrationUseCase
             if (snapshot.dataCompletenessScore < CALIBRATION_MIN_COMPLETENESS) return
 
             val currentWeights = calibrationSource.flow().first()
-            val predicted = inferenceEngine(snapshot)
+            val predicted = inferenceEngine(snapshot, currentWeights)
 
             if (predicted.confidenceScore < CALIBRATION_MIN_CONFIDENCE) return
 

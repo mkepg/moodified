@@ -6,6 +6,7 @@ import com.moodified.app.domain.model.mood.Arousal
 import com.moodified.app.domain.model.mood.MoodEntry
 import com.moodified.app.domain.model.mood.Valence
 import com.moodified.app.domain.repository.MoodRepository
+import com.moodified.app.domain.usecase.inference.FeedbackCalibrationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,7 @@ class QuickLogViewModel
     @Inject
     constructor(
         private val repository: MoodRepository,
+        private val feedbackCalibration: FeedbackCalibrationUseCase,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(QuickLogUiState())
         val uiState: StateFlow<QuickLogUiState> = _uiState.asStateFlow()
@@ -158,37 +160,34 @@ class QuickLogViewModel
             }
 
             val trimmedNote = state.note.trim().takeIf { it.isNotEmpty() }
+            // Capture entry for calibration before the coroutine scope
+            val entryForCalibration = MoodEntry(
+                valence = valence,
+                arousal = arousal,
+                note = trimmedNote,
+                timestamp = effectiveTimestamp,
+                isManual = true,
+            )
 
             viewModelScope.launch {
                 runCatching {
                     if (state.editingEntryId != null) {
-                        repository.updateEntry(
-                            MoodEntry(
-                                id = state.editingEntryId,
-                                valence = valence,
-                                arousal = arousal,
-                                note = trimmedNote,
-                                timestamp = effectiveTimestamp,
-                            ),
-                        )
+                        repository.updateEntry(entryForCalibration.copy(id = state.editingEntryId))
                     } else {
-                        repository.insertEntry(
-                            MoodEntry(
-                                valence = valence,
-                                arousal = arousal,
-                                note = trimmedNote,
-                                timestamp = effectiveTimestamp,
-                            ),
-                        )
+                        repository.insertEntry(entryForCalibration)
                     }
                 }
-                    .onSuccess {
-                        _uiState.update { it.copy(isSaving = false, step = QuickLogStep.SUCCESS) }
+                .onSuccess {
+                    _uiState.update { it.copy(isSaving = false, step = QuickLogStep.SUCCESS) }
+                    // Fire-and-forget: calibration failure must not surface to the user
+                    viewModelScope.launch {
+                        runCatching { feedbackCalibration(entryForCalibration) }
                     }
-                    .onFailure { e ->
-                        _uiState.update { it.copy(isSaving = false) }
-                        _events.send(QuickLogEvent.SaveError(e.message ?: "Failed to save entry"))
-                    }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isSaving = false) }
+                    _events.send(QuickLogEvent.SaveError(e.message ?: "Failed to save entry"))
+                }
             }
         }
 

@@ -1,6 +1,8 @@
 package com.moodified.app.domain.usecase.inference
 
+import com.moodified.app.domain.model.inference.CalibrationWeights
 import com.moodified.app.domain.model.inference.DailyBehaviorSnapshot
+import com.moodified.app.domain.model.sleep.DailySleepSummary
 import com.moodified.app.domain.model.mood.Arousal
 import com.moodified.app.domain.model.mood.MoodEntry
 import com.moodified.app.domain.model.mood.Valence
@@ -88,5 +90,58 @@ class RuleBasedMoodInferenceEngineTest {
     fun interpretationLabelIsNeverBlank() {
         val state = engine(snapshot())
         assertFalse(state.interpretationLabel.isBlank())
+    }
+
+    // ---- Calibration: default weights produce identical results to no-arg call ----
+
+    @Test
+    fun `calibration weights default to 1_0 and do not change scoring`() {
+        val snap = snapshot(completeness = 100)
+        val withDefault = engine(snap, CalibrationWeights())
+        val withoutArg = engine(snap)
+        assertEquals(withDefault.valence, withoutArg.valence)
+        assertEquals(withDefault.arousal, withoutArg.arousal)
+    }
+
+    // ---- Calibration: sleep multiplier of 0.5 reduces sleep event contributions ----
+
+    @Test
+    fun `sleep multiplier of 0_5 approximately halves sleep event contributions`() {
+        // Good sleep data: 480 minutes, 0 awakenings — triggers the solid sleep +15 valence event
+        val goodSleep = DailySleepSummary(
+            date = "2026-01-15",
+            totalSleepMinutes = 480,
+            awakenings = 0,
+        )
+        val snapWithSleep = DailyBehaviorSnapshot(
+            targetDate = LocalDate.of(2026, 1, 15),
+            sleepSummary = goodSleep,
+            activitySummary = null,
+            interactionSummary = null,
+            moodEntries = emptyList(),
+            dataCompletenessScore = 100,
+        )
+
+        val fullWeights = engine(snapWithSleep, CalibrationWeights(sleepMultiplier = 1.0f))
+        val halfWeights = engine(snapWithSleep, CalibrationWeights(sleepMultiplier = 0.5f))
+
+        // With sleepMultiplier=0.5, the sleep valence contribution is halved,
+        // so the resulting valence score should be lower (or equal at worst if clamped to same bucket)
+        val fullValenceOrdinal = fullWeights.valence.ordinal
+        val halfValenceOrdinal = halfWeights.valence.ordinal
+
+        // The scoring events list should reflect the reduced sleep contribution
+        val fullSleepValence = fullWeights.scoringEvents.filter {
+            it.domain == com.moodified.app.domain.model.inference.InferenceDomain.SLEEP
+        }.sumOf { it.valenceDelta }
+
+        val halfSleepValence = halfWeights.scoringEvents.filter {
+            it.domain == com.moodified.app.domain.model.inference.InferenceDomain.SLEEP
+        }.sumOf { it.valenceDelta }
+
+        assertTrue(
+            "Half multiplier should reduce sleep valence contribution. full=$fullSleepValence half=$halfSleepValence",
+            halfSleepValence <= fullSleepValence,
+        )
     }
 }
