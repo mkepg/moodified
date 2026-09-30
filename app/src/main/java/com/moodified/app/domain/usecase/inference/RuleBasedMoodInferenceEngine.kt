@@ -223,6 +223,7 @@ class RuleBasedMoodInferenceEngine
                 interpretationLabel = interpreter.interpret(finalValence, finalArousal),
                 confidenceScore = calculateConfidence(snapshot),
                 explainabilityString = explainer.generateExplanation(sortedEvents),
+                scoringEvents = sortedEvents,
                 isFallback = false,
             )
         }
