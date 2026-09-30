@@ -139,9 +139,11 @@ class RuleBasedMoodInferenceEngineTest {
             it.domain == com.moodified.app.domain.model.inference.InferenceDomain.SLEEP
         }.sumOf { it.valenceDelta }
 
+        assertEquals("Full sleep valence should be 15", 15, fullSleepValence)
+        assertEquals("Half sleep valence should be 8", 8, halfSleepValence)
         assertTrue(
-            "Half multiplier should reduce sleep valence contribution. full=$fullSleepValence half=$halfSleepValence",
-            halfSleepValence <= fullSleepValence,
+            "Half multiplier should strictly reduce sleep valence contribution. full=$fullSleepValence half=$halfSleepValence",
+            halfSleepValence < fullSleepValence,
         )
     }
 }

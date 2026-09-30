@@ -5,6 +5,7 @@ import com.moodified.app.domain.model.mood.MoodEntry
 import com.moodified.app.domain.model.mood.Valence
 import com.moodified.app.domain.repository.MoodRepository
 import com.moodified.app.domain.usecase.inference.FeedbackCalibrationUseCase
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -62,6 +63,7 @@ class QuickLogViewModelTest {
             assertEquals(Arousal.MID, entry.arousal)
             assertTrue("timestamp should be ~now", !entry.timestamp.isBefore(before))
             assertTrue("timestamp should be ~now", !entry.timestamp.isAfter(LocalDateTime.now()))
+            coVerify { fakeFeedbackCalibration(any()) }
         }
 
     @Test
