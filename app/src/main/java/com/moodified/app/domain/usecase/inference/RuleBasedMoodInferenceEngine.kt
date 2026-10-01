@@ -67,6 +67,7 @@ class RuleBasedMoodInferenceEngine
 
             val highScreenThreshold =
                 snapshot.interactionTrends?.averageScreenTimeMinutes
+                    ?.takeIf { it > 0 }
                     ?.times(InferenceConstants.DYNAMIC_HIGH_SCREEN_TIME_MULTIPLIER)?.toInt()
                     ?: InferenceConstants.HIGH_SCREEN_TIME_MINUTES
             val highLateNightThreshold =

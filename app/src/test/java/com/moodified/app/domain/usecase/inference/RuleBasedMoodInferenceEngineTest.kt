@@ -150,4 +150,57 @@ class RuleBasedMoodInferenceEngineTest {
             halfSleepValence < fullSleepValence,
         )
     }
+
+    // ---- Calibration: reduced multiplier lessens the impact of a negative sleep event ----
+
+    @Test
+    fun `reduced sleep multiplier decreases negative impact of poor sleep scoring event`() {
+        // Very short sleep (60 minutes) — well below any threshold — fires the sleep-deprived
+        // negative event (-12 valence). With a reduced multiplier (0.5f) the negative delta
+        // is halved, so the overall valence score should be higher (less negative) than with
+        // the default multiplier of 1.0f.
+        val poorSleep =
+            DailySleepSummary(
+                date = "2026-01-15",
+                totalSleepMinutes = 60,
+                awakenings = 0,
+            )
+        val snapWithPoorSleep =
+            DailyBehaviorSnapshot(
+                targetDate = LocalDate.of(2026, 1, 15),
+                sleepSummary = poorSleep,
+                activitySummary = null,
+                interactionSummary = null,
+                moodEntries = emptyList(),
+                dataCompletenessScore = 100,
+            )
+
+        val defaultResult = engine(snapWithPoorSleep, CalibrationWeights(sleepMultiplier = 1.0f))
+        val reducedResult = engine(snapWithPoorSleep, CalibrationWeights(sleepMultiplier = 0.5f))
+
+        val defaultSleepValence =
+            defaultResult.scoringEvents
+                .filter { it.domain == com.moodified.app.domain.model.inference.InferenceDomain.SLEEP }
+                .sumOf { it.valenceDelta }
+        val reducedSleepValence =
+            reducedResult.scoringEvents
+                .filter { it.domain == com.moodified.app.domain.model.inference.InferenceDomain.SLEEP }
+                .sumOf { it.valenceDelta }
+
+        // Both must be negative (poor sleep penalises mood)
+        assertTrue(
+            "Default multiplier should produce a negative sleep contribution, got $defaultSleepValence",
+            defaultSleepValence < 0,
+        )
+        assertTrue(
+            "Reduced multiplier should still produce a negative sleep contribution, got $reducedSleepValence",
+            reducedSleepValence < 0,
+        )
+        // The reduced multiplier must shrink the magnitude of the penalty
+        assertTrue(
+            "Reduced multiplier (0.5) should produce a less-negative sleep score than default (1.0). " +
+                "default=$defaultSleepValence reduced=$reducedSleepValence",
+            reducedSleepValence > defaultSleepValence,
+        )
+    }
 }
