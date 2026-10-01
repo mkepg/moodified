@@ -180,7 +180,8 @@ private fun SleepTabBarChart(
                         drawContent()
                         drawInsightGridLines()
                         if (moodPoints.size == points.size) {
-                            drawMoodSparkline(moodPoints)
+                            // 6dp spacer + ~16dp labelSmall text = 22dp reserved below bar area
+                            drawMoodSparkline(moodPoints, bottomPadding = 22.dp)
                         }
                     },
                 verticalAlignment = Alignment.Bottom,

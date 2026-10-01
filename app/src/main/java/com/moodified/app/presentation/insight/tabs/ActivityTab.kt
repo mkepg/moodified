@@ -188,7 +188,7 @@ private fun ActivityTabStackedBarChart(
                         drawContent()
                         drawInsightGridLines()
                         if (moodPoints.size == points.size) {
-                            drawMoodSparkline(moodPoints)
+                            drawMoodSparkline(moodPoints, bottomPadding = 38.dp)
                         }
                     },
                 verticalAlignment = Alignment.Bottom,

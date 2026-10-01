@@ -13,16 +13,19 @@ private val MoodSparklineColor = Color(0xFF4A7C59) // matches DeepSage; adjust i
 internal fun DrawScope.drawMoodSparkline(
     moodPoints: List<Float?>,
     dotRadius: Dp = 4.dp,
+    bottomPadding: Dp = 0.dp,
 ) {
     if (moodPoints.isEmpty()) return
     val slotWidth = size.width / moodPoints.size.coerceAtLeast(1).toFloat()
+    // Constrain the drawable area to exclude the label/spacer zone below the bars
+    val chartHeight = size.height - bottomPadding.toPx()
     val path = Path()
     var pathStarted = false
 
     moodPoints.forEachIndexed { i, value ->
         if (value != null) {
             val x = slotWidth * i + slotWidth / 2f
-            val y = size.height * (1f - value.coerceIn(0f, 1f))
+            val y = chartHeight * (1f - value.coerceIn(0f, 1f))
             if (!pathStarted) {
                 path.moveTo(x, y)
                 pathStarted = true
@@ -44,7 +47,7 @@ internal fun DrawScope.drawMoodSparkline(
     moodPoints.forEachIndexed { i, value ->
         if (value != null) {
             val x = slotWidth * i + slotWidth / 2f
-            val y = size.height * (1f - value.coerceIn(0f, 1f))
+            val y = chartHeight * (1f - value.coerceIn(0f, 1f))
             drawCircle(
                 color = MoodSparklineColor,
                 radius = dotRadius.toPx(),
