@@ -1,6 +1,7 @@
 package com.moodified.app.presentation.insight.tabs.overview
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Bedtime
+import androidx.compose.material.icons.outlined.DirectionsRun
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.rounded.Air
 import androidx.compose.material.icons.rounded.BatteryAlert
 import androidx.compose.material.icons.rounded.Bedtime
@@ -30,8 +35,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.overflow.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moodified.app.core.theme.ErrorRed
@@ -41,6 +48,8 @@ import com.moodified.app.core.theme.ValenceNegative
 import com.moodified.app.core.theme.ValenceNeutral
 import com.moodified.app.core.theme.ValencePositive
 import com.moodified.app.domain.model.inference.InferredMoodState
+import com.moodified.app.domain.model.inference.InferenceDomain
+import com.moodified.app.domain.model.inference.ScoringEvent
 import com.moodified.app.domain.model.mood.Arousal
 import com.moodified.app.domain.model.mood.Valence
 
@@ -95,6 +104,10 @@ fun OverviewTodayMoodCard(mood: InferredMoodState) {
                     color = TextSecondary,
                     lineHeight = 16.sp,
                 )
+                if (mood.scoringEvents.isNotEmpty() && !mood.isFallback) {
+                    Spacer(Modifier.height(8.dp))
+                    BehavioralDriverChips(events = mood.scoringEvents)
+                }
             }
             Spacer(Modifier.width(12.dp))
             Surface(shape = RoundedCornerShape(20.dp), color = accentColor.copy(alpha = 0.20f)) {
@@ -105,6 +118,67 @@ fun OverviewTodayMoodCard(mood: InferredMoodState) {
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun BehavioralDriverChips(events: List<ScoringEvent>) {
+    val topEvents = events
+        .filter { kotlin.math.abs(it.valenceDelta) + kotlin.math.abs(it.arousalDelta) >= 5 }
+        .sortedByDescending { kotlin.math.abs(it.valenceDelta) + kotlin.math.abs(it.arousalDelta) }
+        .take(3)
+
+    if (topEvents.isEmpty()) return
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        topEvents.forEach { event ->
+            BehavioralChip(event)
+        }
+    }
+}
+
+@Composable
+private fun BehavioralChip(event: ScoringEvent) {
+    val isPositive = event.valenceDelta > 0
+    val chipColor = if (isPositive) Color(0xFFDFF0E5) else Color(0xFFFFF0E0)
+    val textColor = if (isPositive) Color(0xFF2E6B45) else Color(0xFFB85C00)
+    val icon = when (event.domain) {
+        InferenceDomain.SLEEP -> Icons.Outlined.Bedtime
+        InferenceDomain.ACTIVITY -> Icons.Outlined.DirectionsRun
+        InferenceDomain.SCREEN -> Icons.Outlined.PhoneAndroid
+        InferenceDomain.OTHER -> Icons.Outlined.Info
+    }
+    val arrow = if (isPositive) "↑" else "↓"
+
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = chipColor,
+        tonalElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = textColor,
+                modifier = Modifier.size(14.dp),
+            )
+            Text(
+                text = "${event.description.replaceFirstChar { it.uppercase() }} $arrow",
+                style = MaterialTheme.typography.labelSmall,
+                color = textColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
