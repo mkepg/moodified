@@ -226,7 +226,7 @@ class InsightViewModel
 
             // oldest-first for left-to-right chart alignment
             val weeklyMoodPoints: List<Float?> =
-                bundles.reversed().map { bundle ->
+                chartBundles.map { bundle ->
                     val avgManualValence =
                         bundle.moodEntries
                             .filter { it.isManual }
@@ -237,6 +237,36 @@ class InsightViewModel
                     val fallbackValence = bundle.inferredMood?.valence?.ordinal?.toFloat()
                     val rawValue = avgManualValence ?: fallbackValence ?: return@map null
                     (rawValue / 2f).coerceIn(0f, 1f) // NEGATIVE=0f, NEUTRAL=0.5f, POSITIVE=1f
+                }
+
+            val dateToMood: Map<LocalDate, Float> =
+                chartBundles
+                    .zip(weeklyMoodPoints)
+                    .mapNotNull { (bundle, moodPoint) -> moodPoint?.let { bundle.date to it } }
+                    .toMap()
+
+            val activityMoodInsight: String? =
+                when (moodCorrelation(dateToMood, activityPoints.associate { it.date to it.totalSteps.toFloat() })) {
+                    Correlation.POSITIVE -> "Your mood tended to be better on more active days."
+                    Correlation.NEGATIVE -> "Your mood was lower on your busiest days — rest may help."
+                    Correlation.NONE -> "Activity and mood moved independently this week."
+                    null -> null
+                }
+
+            val sleepMoodInsight: String? =
+                when (moodCorrelation(dateToMood, sleepPoints.associate { it.date to it.totalSleepMinutes.toFloat() })) {
+                    Correlation.POSITIVE -> "More sleep lined up with better mood this week."
+                    Correlation.NEGATIVE -> "Sleep duration and mood didn't track together this week."
+                    Correlation.NONE -> "Sleep and mood moved independently this week."
+                    null -> null
+                }
+
+            val screenMoodInsight: String? =
+                when (moodCorrelation(dateToMood, screenPoints.associate { it.date to it.totalScreenMinutes.toFloat() }, invertedExpectation = true)) {
+                    Correlation.POSITIVE -> "Your mood was lower on your heaviest screen-use days."
+                    Correlation.NEGATIVE -> "Screen use and mood moved together this week."
+                    Correlation.NONE -> "Screen use and mood didn't closely track this week."
+                    null -> null
                 }
 
             return InsightUiState(
@@ -259,6 +289,9 @@ class InsightViewModel
                 moodStability = stability,
                 todayTimeline = timelineEvents,
                 weeklyMoodPoints = weeklyMoodPoints,
+                activityMoodInsight = activityMoodInsight,
+                sleepMoodInsight = sleepMoodInsight,
+                screenMoodInsight = screenMoodInsight,
             )
         }
 
@@ -403,6 +436,34 @@ class InsightViewModel
             val interactionSessions: List<InteractionSession>,
             val activityBlocks: List<ActivityBlock>,
         )
+
+        private enum class Correlation { POSITIVE, NEGATIVE, NONE }
+
+        private fun moodCorrelation(
+            dateToMood: Map<LocalDate, Float>,
+            dateToValue: Map<LocalDate, Float>,
+            invertedExpectation: Boolean = false,
+        ): Correlation? {
+            val pairs =
+                dateToMood.keys
+                    .intersect(dateToValue.keys)
+                    .filter { (dateToValue[it] ?: 0f) > 0f }
+                    .map { dateToValue[it]!! to dateToMood[it]!! }
+            if (pairs.size < 3) return null
+
+            val median = pairs.map { it.first }.sorted().let { s ->
+                if (s.size % 2 == 0) (s[s.size / 2 - 1] + s[s.size / 2]) / 2f else s[s.size / 2]
+            }
+            val highMoodAvg = pairs.filter { it.first >= median }.map { it.second }.average()
+            val lowMoodAvg = pairs.filter { it.first < median }.map { it.second }.average()
+            val delta = if (invertedExpectation) lowMoodAvg - highMoodAvg else highMoodAvg - lowMoodAvg
+
+            return when {
+                delta > 0.15 -> Correlation.POSITIVE
+                delta < -0.15 -> Correlation.NEGATIVE
+                else -> Correlation.NONE
+            }
+        }
 
         private companion object {
             const val MIN_MOOD_DAYS = 3

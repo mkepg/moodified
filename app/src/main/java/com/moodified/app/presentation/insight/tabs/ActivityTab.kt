@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -104,7 +105,7 @@ fun ActivityTab(state: InsightUiState) {
                 {
                     ActivityTabStackedBarChart(
                         points = state.activityBarPoints,
-                        moodPoints = if (state.weeklyMoodPoints.size == state.activityBarPoints.size) state.weeklyMoodPoints else emptyList(),
+                        insight = state.activityMoodInsight,
                     )
                 }
             } else {
@@ -148,7 +149,7 @@ private fun ActivityTabTrendPill(
 @Composable
 private fun ActivityTabStackedBarChart(
     points: List<ActivityBarPoint>,
-    moodPoints: List<Float?> = emptyList(),
+    insight: String? = null,
 ) {
     if (points.isEmpty()) return
 
@@ -187,9 +188,6 @@ private fun ActivityTabStackedBarChart(
                     Modifier.weight(1f).fillMaxHeight().drawWithContent {
                         drawContent()
                         drawInsightGridLines()
-                        if (moodPoints.size == points.size) {
-                            drawMoodSparkline(moodPoints, bottomPadding = 38.dp)
-                        }
                     },
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceAround,
@@ -319,6 +317,21 @@ private fun ActivityTabStackedBarChart(
             InsightLegendDot(color = ColorVigorous, label = "Vigorous")
             Spacer(modifier = Modifier.weight(1f))
             InsightLegendDot(color = MilkDeep, label = "\"0.0k\" Step count")
+        }
+        if (insight != null) {
+            Spacer(Modifier.height(10.dp))
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = SageDim.copy(alpha = 0.3f),
+                tonalElevation = 0.dp,
+            ) {
+                Text(
+                    text = insight,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextTertiary,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                )
+            }
         }
     }
 }

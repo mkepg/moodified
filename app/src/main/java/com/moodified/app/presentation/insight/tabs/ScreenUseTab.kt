@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -99,7 +100,7 @@ fun ScreenUseTab(state: InsightUiState) {
                 {
                     ScreenUseTabBarChart(
                         points = state.screenTimePoints,
-                        moodPoints = if (state.weeklyMoodPoints.size == state.screenTimePoints.size) state.weeklyMoodPoints else emptyList(),
+                        insight = state.screenMoodInsight,
                     )
                 }
             } else {
@@ -150,7 +151,7 @@ private fun ScreenUseTabTrendPill(
 @Composable
 private fun ScreenUseTabBarChart(
     points: List<ScreenTimeBarPoint>,
-    moodPoints: List<Float?> = emptyList(),
+    insight: String? = null,
 ) {
     if (points.isEmpty()) return
 
@@ -189,9 +190,6 @@ private fun ScreenUseTabBarChart(
                     Modifier.weight(1f).fillMaxHeight().drawWithContent {
                         drawContent()
                         drawInsightGridLines()
-                        if (moodPoints.size == points.size) {
-                            drawMoodSparkline(moodPoints, bottomPadding = 38.dp)
-                        }
                     },
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceAround,
@@ -302,6 +300,21 @@ private fun ScreenUseTabBarChart(
             InsightLegendDot(color = ValenceNeutral.copy(alpha = 0.6f), label = "Late night")
             Spacer(modifier = Modifier.weight(1f))
             InsightLegendDot(color = MilkDeep, label = "Tap bar")
+        }
+        if (insight != null) {
+            Spacer(Modifier.height(10.dp))
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = SageDim.copy(alpha = 0.3f),
+                tonalElevation = 0.dp,
+            ) {
+                Text(
+                    text = insight,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                )
+            }
         }
     }
 }
