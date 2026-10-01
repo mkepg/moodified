@@ -246,27 +246,30 @@ class InsightViewModel
                     .toMap()
 
             val activityMoodInsight: String? =
-                when (moodCorrelation(dateToMood, activityPoints.associate { it.date to it.totalSteps.toFloat() })) {
-                    Correlation.POSITIVE -> "Your mood tended to be better on more active days."
-                    Correlation.NEGATIVE -> "Your mood was lower on your busiest days — rest may help."
-                    Correlation.NONE -> "Activity and mood moved independently this week."
-                    null -> null
+                moodCorrelation(dateToMood, activityPoints.associate { it.date to it.totalSteps.toFloat() })?.let { r ->
+                    when (r.direction) {
+                        Correlation.POSITIVE -> "On your ${r.highCount} most active days, your mood averaged higher than on quieter days."
+                        Correlation.NEGATIVE -> "Your mood dipped on ${r.highCount} of your busiest activity days — some recovery time may help."
+                        Correlation.NONE -> "Activity and mood moved independently across your ${r.totalDays} tracked days this week."
+                    }
                 }
 
             val sleepMoodInsight: String? =
-                when (moodCorrelation(dateToMood, sleepPoints.associate { it.date to it.totalSleepMinutes.toFloat() })) {
-                    Correlation.POSITIVE -> "More sleep lined up with better mood this week."
-                    Correlation.NEGATIVE -> "Sleep duration and mood didn't track together this week."
-                    Correlation.NONE -> "Sleep and mood moved independently this week."
-                    null -> null
+                moodCorrelation(dateToMood, sleepPoints.associate { it.date to it.totalSleepMinutes.toFloat() })?.let { r ->
+                    when (r.direction) {
+                        Correlation.POSITIVE -> "Your ${r.highCount} longest sleep nights lined up with better mood this week."
+                        Correlation.NEGATIVE -> "Sleep duration and mood didn't closely track across your ${r.totalDays} nights this week."
+                        Correlation.NONE -> "Sleep and mood moved independently across your ${r.totalDays} tracked nights this week."
+                    }
                 }
 
             val screenMoodInsight: String? =
-                when (moodCorrelation(dateToMood, screenPoints.associate { it.date to it.totalScreenMinutes.toFloat() }, invertedExpectation = true)) {
-                    Correlation.POSITIVE -> "Your mood was lower on your heaviest screen-use days."
-                    Correlation.NEGATIVE -> "Screen use and mood moved together this week."
-                    Correlation.NONE -> "Screen use and mood didn't closely track this week."
-                    null -> null
+                moodCorrelation(dateToMood, screenPoints.associate { it.date to it.totalScreenMinutes.toFloat() }, invertedExpectation = true)?.let { r ->
+                    when (r.direction) {
+                        Correlation.POSITIVE -> "Your mood was lower on ${r.highCount} of your heaviest screen-use days."
+                        Correlation.NEGATIVE -> "Screen use and mood tracked together on ${r.highCount} days this week — more time didn't bring you down."
+                        Correlation.NONE -> "Screen use and mood didn't closely track across your ${r.totalDays} days this week."
+                    }
                 }
 
             return InsightUiState(
@@ -439,11 +442,18 @@ class InsightViewModel
 
         private enum class Correlation { POSITIVE, NEGATIVE, NONE }
 
+        private data class CorrelationResult(
+            val direction: Correlation,
+            val highCount: Int,
+            val lowCount: Int,
+            val totalDays: Int,
+        )
+
         private fun moodCorrelation(
             dateToMood: Map<LocalDate, Float>,
             dateToValue: Map<LocalDate, Float>,
             invertedExpectation: Boolean = false,
-        ): Correlation? {
+        ): CorrelationResult? {
             val pairs =
                 dateToMood.keys
                     .intersect(dateToValue.keys)
@@ -454,15 +464,25 @@ class InsightViewModel
             val median = pairs.map { it.first }.sorted().let { s ->
                 if (s.size % 2 == 0) (s[s.size / 2 - 1] + s[s.size / 2]) / 2f else s[s.size / 2]
             }
-            val highMoodAvg = pairs.filter { it.first >= median }.map { it.second }.average()
-            val lowMoodAvg = pairs.filter { it.first < median }.map { it.second }.average()
+            val highPairs = pairs.filter { it.first >= median }
+            val lowPairs = pairs.filter { it.first < median }
+            val highMoodAvg = highPairs.map { it.second }.average()
+            val lowMoodAvg = lowPairs.map { it.second }.average()
             val delta = if (invertedExpectation) lowMoodAvg - highMoodAvg else highMoodAvg - lowMoodAvg
 
-            return when {
-                delta > 0.15 -> Correlation.POSITIVE
-                delta < -0.15 -> Correlation.NEGATIVE
-                else -> Correlation.NONE
-            }
+            val direction =
+                when {
+                    delta > 0.15 -> Correlation.POSITIVE
+                    delta < -0.15 -> Correlation.NEGATIVE
+                    else -> Correlation.NONE
+                }
+
+            return CorrelationResult(
+                direction = direction,
+                highCount = highPairs.size,
+                lowCount = lowPairs.size,
+                totalDays = pairs.size,
+            )
         }
 
         private companion object {
