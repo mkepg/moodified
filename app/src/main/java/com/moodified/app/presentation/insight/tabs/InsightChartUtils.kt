@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-private val MoodSparklineColor = Color(0xFF4A7C59)  // matches DeepSage; adjust if needed
+private val MoodSparklineColor = Color(0xFF4A7C59) // matches DeepSage; adjust if needed
 
 internal fun DrawScope.drawMoodSparkline(
     moodPoints: List<Float?>,
@@ -30,7 +30,7 @@ internal fun DrawScope.drawMoodSparkline(
                 path.lineTo(x, y)
             }
         } else {
-            pathStarted = false  // gap in line when day has no mood data
+            pathStarted = false // gap in line when day has no mood data
         }
     }
 

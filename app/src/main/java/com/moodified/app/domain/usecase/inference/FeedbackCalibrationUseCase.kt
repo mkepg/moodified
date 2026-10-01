@@ -38,24 +38,27 @@ class FeedbackCalibrationUseCase
             val tooOptimistic = predictedOrdinal > manualOrdinal
             val nudge = CALIBRATION_BASE_NUDGE / (1f + currentWeights.feedbackCount * CALIBRATION_DECAY_RATE)
 
-            fun netValenceFor(domain: InferenceDomain) =
-                predicted.scoringEvents.filter { it.domain == domain }.sumOf { it.valenceDelta }
+            fun netValenceFor(domain: InferenceDomain) = predicted.scoringEvents.filter { it.domain == domain }.sumOf { it.valenceDelta }
 
             val sleepNet = netValenceFor(InferenceDomain.SLEEP)
             val activityNet = netValenceFor(InferenceDomain.ACTIVITY)
             val screenNet = netValenceFor(InferenceDomain.SCREEN)
 
-            fun adjustMultiplier(current: Float, netContribution: Int): Float {
+            fun adjustMultiplier(
+                current: Float,
+                netContribution: Int,
+            ): Float {
                 val contributedWrongly = if (tooOptimistic) netContribution > 0 else netContribution < 0
                 return if (contributedWrongly) (current - nudge).coerceIn(0.5f, 1.5f) else current
             }
 
-            val updated = currentWeights.copy(
-                sleepMultiplier = adjustMultiplier(currentWeights.sleepMultiplier, sleepNet),
-                activityMultiplier = adjustMultiplier(currentWeights.activityMultiplier, activityNet),
-                screenMultiplier = adjustMultiplier(currentWeights.screenMultiplier, screenNet),
-                feedbackCount = currentWeights.feedbackCount + 1,
-            ).withLastUpdated(today)
+            val updated =
+                currentWeights.copy(
+                    sleepMultiplier = adjustMultiplier(currentWeights.sleepMultiplier, sleepNet),
+                    activityMultiplier = adjustMultiplier(currentWeights.activityMultiplier, activityNet),
+                    screenMultiplier = adjustMultiplier(currentWeights.screenMultiplier, screenNet),
+                    feedbackCount = currentWeights.feedbackCount + 1,
+                ).withLastUpdated(today)
 
             calibrationSource.update(updated)
         }

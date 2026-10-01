@@ -47,8 +47,8 @@ import com.moodified.app.core.theme.TextSecondary
 import com.moodified.app.core.theme.ValenceNegative
 import com.moodified.app.core.theme.ValenceNeutral
 import com.moodified.app.core.theme.ValencePositive
-import com.moodified.app.domain.model.inference.InferredMoodState
 import com.moodified.app.domain.model.inference.InferenceDomain
+import com.moodified.app.domain.model.inference.InferredMoodState
 import com.moodified.app.domain.model.inference.ScoringEvent
 import com.moodified.app.domain.model.mood.Arousal
 import com.moodified.app.domain.model.mood.Valence
@@ -124,17 +124,19 @@ fun OverviewTodayMoodCard(mood: InferredMoodState) {
 
 @Composable
 private fun BehavioralDriverChips(events: List<ScoringEvent>) {
-    val topEvents = events
-        .filter { kotlin.math.abs(it.valenceDelta) + kotlin.math.abs(it.arousalDelta) >= 5 }
-        .sortedByDescending { kotlin.math.abs(it.valenceDelta) + kotlin.math.abs(it.arousalDelta) }
-        .take(3)
+    val topEvents =
+        events
+            .filter { kotlin.math.abs(it.valenceDelta) + kotlin.math.abs(it.arousalDelta) >= 5 }
+            .sortedByDescending { kotlin.math.abs(it.valenceDelta) + kotlin.math.abs(it.arousalDelta) }
+            .take(3)
 
     if (topEvents.isEmpty()) return
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         topEvents.forEach { event ->
@@ -148,12 +150,13 @@ private fun BehavioralChip(event: ScoringEvent) {
     val isPositive = event.valenceDelta > 0
     val chipColor = if (isPositive) Color(0xFFDFF0E5) else Color(0xFFFFF0E0)
     val textColor = if (isPositive) Color(0xFF2E6B45) else Color(0xFFB85C00)
-    val icon = when (event.domain) {
-        InferenceDomain.SLEEP -> Icons.Outlined.Bedtime
-        InferenceDomain.ACTIVITY -> Icons.Outlined.DirectionsRun
-        InferenceDomain.SCREEN -> Icons.Outlined.PhoneAndroid
-        InferenceDomain.OTHER -> Icons.Outlined.Info
-    }
+    val icon =
+        when (event.domain) {
+            InferenceDomain.SLEEP -> Icons.Outlined.Bedtime
+            InferenceDomain.ACTIVITY -> Icons.Outlined.DirectionsRun
+            InferenceDomain.SCREEN -> Icons.Outlined.PhoneAndroid
+            InferenceDomain.OTHER -> Icons.Outlined.Info
+        }
     val arrow = if (isPositive) "↑" else "↓"
 
     Surface(

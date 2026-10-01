@@ -2,10 +2,10 @@ package com.moodified.app.domain.usecase.inference
 
 import com.moodified.app.domain.model.inference.CalibrationWeights
 import com.moodified.app.domain.model.inference.DailyBehaviorSnapshot
-import com.moodified.app.domain.model.sleep.DailySleepSummary
 import com.moodified.app.domain.model.mood.Arousal
 import com.moodified.app.domain.model.mood.MoodEntry
 import com.moodified.app.domain.model.mood.Valence
+import com.moodified.app.domain.model.sleep.DailySleepSummary
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -108,19 +108,21 @@ class RuleBasedMoodInferenceEngineTest {
     @Test
     fun `sleep multiplier of 0_5 approximately halves sleep event contributions`() {
         // Good sleep data: 480 minutes, 0 awakenings — triggers the solid sleep +15 valence event
-        val goodSleep = DailySleepSummary(
-            date = "2026-01-15",
-            totalSleepMinutes = 480,
-            awakenings = 0,
-        )
-        val snapWithSleep = DailyBehaviorSnapshot(
-            targetDate = LocalDate.of(2026, 1, 15),
-            sleepSummary = goodSleep,
-            activitySummary = null,
-            interactionSummary = null,
-            moodEntries = emptyList(),
-            dataCompletenessScore = 100,
-        )
+        val goodSleep =
+            DailySleepSummary(
+                date = "2026-01-15",
+                totalSleepMinutes = 480,
+                awakenings = 0,
+            )
+        val snapWithSleep =
+            DailyBehaviorSnapshot(
+                targetDate = LocalDate.of(2026, 1, 15),
+                sleepSummary = goodSleep,
+                activitySummary = null,
+                interactionSummary = null,
+                moodEntries = emptyList(),
+                dataCompletenessScore = 100,
+            )
 
         val fullWeights = engine(snapWithSleep, CalibrationWeights(sleepMultiplier = 1.0f))
         val halfWeights = engine(snapWithSleep, CalibrationWeights(sleepMultiplier = 0.5f))
@@ -131,13 +133,15 @@ class RuleBasedMoodInferenceEngineTest {
         val halfValenceOrdinal = halfWeights.valence.ordinal
 
         // The scoring events list should reflect the reduced sleep contribution
-        val fullSleepValence = fullWeights.scoringEvents.filter {
-            it.domain == com.moodified.app.domain.model.inference.InferenceDomain.SLEEP
-        }.sumOf { it.valenceDelta }
+        val fullSleepValence =
+            fullWeights.scoringEvents.filter {
+                it.domain == com.moodified.app.domain.model.inference.InferenceDomain.SLEEP
+            }.sumOf { it.valenceDelta }
 
-        val halfSleepValence = halfWeights.scoringEvents.filter {
-            it.domain == com.moodified.app.domain.model.inference.InferenceDomain.SLEEP
-        }.sumOf { it.valenceDelta }
+        val halfSleepValence =
+            halfWeights.scoringEvents.filter {
+                it.domain == com.moodified.app.domain.model.inference.InferenceDomain.SLEEP
+            }.sumOf { it.valenceDelta }
 
         assertEquals("Full sleep valence should be 15", 15, fullSleepValence)
         assertEquals("Half sleep valence should be 8", 8, halfSleepValence)

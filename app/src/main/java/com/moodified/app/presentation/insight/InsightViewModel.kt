@@ -225,17 +225,19 @@ class InsightViewModel
             val todayBundle = bundles.firstOrNull { it.date == today }
 
             // oldest-first for left-to-right chart alignment
-            val weeklyMoodPoints: List<Float?> = bundles.reversed().map { bundle ->
-                val avgManualValence = bundle.moodEntries
-                    .filter { it.isManual }
-                    .map { it.valence.ordinal.toFloat() }
-                    .takeIf { it.isNotEmpty() }
-                    ?.average()
-                    ?.toFloat()
-                val fallbackValence = bundle.inferredMood?.valence?.ordinal?.toFloat()
-                val rawValue = avgManualValence ?: fallbackValence ?: return@map null
-                (rawValue / 2f).coerceIn(0f, 1f)  // NEGATIVE=0f, NEUTRAL=0.5f, POSITIVE=1f
-            }
+            val weeklyMoodPoints: List<Float?> =
+                bundles.reversed().map { bundle ->
+                    val avgManualValence =
+                        bundle.moodEntries
+                            .filter { it.isManual }
+                            .map { it.valence.ordinal.toFloat() }
+                            .takeIf { it.isNotEmpty() }
+                            ?.average()
+                            ?.toFloat()
+                    val fallbackValence = bundle.inferredMood?.valence?.ordinal?.toFloat()
+                    val rawValue = avgManualValence ?: fallbackValence ?: return@map null
+                    (rawValue / 2f).coerceIn(0f, 1f) // NEGATIVE=0f, NEUTRAL=0.5f, POSITIVE=1f
+                }
 
             return InsightUiState(
                 isLoading = false,

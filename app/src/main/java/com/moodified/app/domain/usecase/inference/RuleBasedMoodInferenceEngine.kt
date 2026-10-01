@@ -33,7 +33,10 @@ class RuleBasedMoodInferenceEngine
             return runPassiveInference(snapshot, calibration)
         }
 
-        private fun runPassiveInference(snapshot: DailyBehaviorSnapshot, calibration: CalibrationWeights): InferredMoodState {
+        private fun runPassiveInference(
+            snapshot: DailyBehaviorSnapshot,
+            calibration: CalibrationWeights,
+        ): InferredMoodState {
             val scoringEvents = mutableListOf<ScoringEvent>()
 
             // 1. Sleep Evaluation
@@ -62,12 +65,16 @@ class RuleBasedMoodInferenceEngine
             val activeMinBaseline = snapshot.activityTrends?.averageActiveMinutes?.takeIf { it > 0 } ?: InferenceConstants.HIGH_ACTIVITY_MINUTES
             val dynamicHighActive = (activeMinBaseline * InferenceConstants.DYNAMIC_HIGH_ACTIVITY_MULTIPLIER).toInt()
 
-            val highScreenThreshold = snapshot.interactionTrends?.averageScreenTimeMinutes
-                ?.times(InferenceConstants.DYNAMIC_HIGH_SCREEN_TIME_MULTIPLIER)?.toInt()
-                ?: InferenceConstants.HIGH_SCREEN_TIME_MINUTES
-            val highLateNightThreshold = snapshot.interactionTrends?.averageLateNightMinutes
-                ?.let { if (it > 0) (it * InferenceConstants.DYNAMIC_HIGH_LATE_NIGHT_MULTIPLIER).toInt() else InferenceConstants.LATE_NIGHT_MINUTES_THRESHOLD }
-                ?: InferenceConstants.LATE_NIGHT_MINUTES_THRESHOLD
+            val highScreenThreshold =
+                snapshot.interactionTrends?.averageScreenTimeMinutes
+                    ?.times(InferenceConstants.DYNAMIC_HIGH_SCREEN_TIME_MULTIPLIER)?.toInt()
+                    ?: InferenceConstants.HIGH_SCREEN_TIME_MINUTES
+            val highLateNightThreshold =
+                snapshot.interactionTrends?.averageLateNightMinutes
+                    ?.let {
+                        if (it > 0) (it * InferenceConstants.DYNAMIC_HIGH_LATE_NIGHT_MULTIPLIER).toInt() else InferenceConstants.LATE_NIGHT_MINUTES_THRESHOLD
+                    }
+                    ?: InferenceConstants.LATE_NIGHT_MINUTES_THRESHOLD
 
             // Digital fatigue captures chronic-day screen habits (heavy total use or
             // restless-scrolling patterns). Late-night usage is handled by its own direct
@@ -111,8 +118,11 @@ class RuleBasedMoodInferenceEngine
                 // Late bedtime signal. Onset past the personal baseline + offset tends to
                 // depress next-day valence and slightly elevate arousal (residual wired
                 // feeling from delayed wind-down).
-                val lateBedtimeThreshold = (snapshot.sleepTrends?.baselineSleepOnsetMinutes
-                    ?: InferenceConstants.LATE_BEDTIME_MINUTES) + InferenceConstants.LATE_BEDTIME_OFFSET_MINUTES
+                val lateBedtimeThreshold =
+                    (
+                        snapshot.sleepTrends?.baselineSleepOnsetMinutes
+                            ?: InferenceConstants.LATE_BEDTIME_MINUTES
+                    ) + InferenceConstants.LATE_BEDTIME_OFFSET_MINUTES
                 val onset = sleep.sleepOnsetMinutes
                 if (onset != null && onset >= lateBedtimeThreshold) {
                     scoringEvents += ScoringEvent("unusually late bedtime", -5, 3, domain = InferenceDomain.SLEEP)
@@ -204,36 +214,40 @@ class RuleBasedMoodInferenceEngine
             // Sleep consistency bonus
             val sleepConsistency = snapshot.sleepTrends?.consistencyScore ?: 0
             if (sleepConsistency > InferenceConstants.CONSISTENCY_BONUS_THRESHOLD) {
-                scoringEvents += ScoringEvent(
-                    description = "consistent sleep schedule this week",
-                    valenceDelta = InferenceConstants.SLEEP_CONSISTENCY_BONUS,
-                    domain = InferenceDomain.SLEEP,
-                )
+                scoringEvents +=
+                    ScoringEvent(
+                        description = "consistent sleep schedule this week",
+                        valenceDelta = InferenceConstants.SLEEP_CONSISTENCY_BONUS,
+                        domain = InferenceDomain.SLEEP,
+                    )
             }
 
             // Activity consistency bonus
             val activityConsistency = snapshot.activityTrends?.consistencyScore ?: 0
             if (activityConsistency > InferenceConstants.CONSISTENCY_BONUS_THRESHOLD) {
-                scoringEvents += ScoringEvent(
-                    description = "consistent activity rhythm this week",
-                    valenceDelta = InferenceConstants.ACTIVITY_CONSISTENCY_BONUS,
-                    domain = InferenceDomain.ACTIVITY,
-                )
+                scoringEvents +=
+                    ScoringEvent(
+                        description = "consistent activity rhythm this week",
+                        valenceDelta = InferenceConstants.ACTIVITY_CONSISTENCY_BONUS,
+                        domain = InferenceDomain.ACTIVITY,
+                    )
             }
 
             // Apply per-domain calibration multipliers
-            val calibratedEvents = scoringEvents.map { event ->
-                val multiplier = when (event.domain) {
-                    InferenceDomain.SLEEP -> calibration.sleepMultiplier
-                    InferenceDomain.ACTIVITY -> calibration.activityMultiplier
-                    InferenceDomain.SCREEN -> calibration.screenMultiplier
-                    InferenceDomain.OTHER -> 1.0f
+            val calibratedEvents =
+                scoringEvents.map { event ->
+                    val multiplier =
+                        when (event.domain) {
+                            InferenceDomain.SLEEP -> calibration.sleepMultiplier
+                            InferenceDomain.ACTIVITY -> calibration.activityMultiplier
+                            InferenceDomain.SCREEN -> calibration.screenMultiplier
+                            InferenceDomain.OTHER -> 1.0f
+                        }
+                    event.copy(
+                        valenceDelta = (event.valenceDelta * multiplier).roundToInt(),
+                        arousalDelta = (event.arousalDelta * multiplier).roundToInt(),
+                    )
                 }
-                event.copy(
-                    valenceDelta = (event.valenceDelta * multiplier).roundToInt(),
-                    arousalDelta = (event.arousalDelta * multiplier).roundToInt(),
-                )
-            }
             val valenceScore = (InferenceConstants.BASE_SCORE + calibratedEvents.sumOf { it.valenceDelta }).coerceIn(0, 100)
             val arousalScore = (InferenceConstants.BASE_SCORE + calibratedEvents.sumOf { it.arousalDelta }).coerceIn(0, 100)
 

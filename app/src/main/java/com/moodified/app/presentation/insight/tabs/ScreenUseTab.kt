@@ -185,13 +185,14 @@ private fun ScreenUseTabBarChart(
             }
 
             Row(
-                modifier = Modifier.weight(1f).fillMaxHeight().drawWithContent {
-                    drawContent()
-                    drawInsightGridLines()
-                    if (moodPoints.size == points.size) {
-                        drawMoodSparkline(moodPoints)
-                    }
-                },
+                modifier =
+                    Modifier.weight(1f).fillMaxHeight().drawWithContent {
+                        drawContent()
+                        drawInsightGridLines()
+                        if (moodPoints.size == points.size) {
+                            drawMoodSparkline(moodPoints)
+                        }
+                    },
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {

@@ -161,13 +161,14 @@ class QuickLogViewModel
 
             val trimmedNote = state.note.trim().takeIf { it.isNotEmpty() }
             // Capture entry for calibration before the coroutine scope
-            val entryForCalibration = MoodEntry(
-                valence = valence,
-                arousal = arousal,
-                note = trimmedNote,
-                timestamp = effectiveTimestamp,
-                isManual = true,
-            )
+            val entryForCalibration =
+                MoodEntry(
+                    valence = valence,
+                    arousal = arousal,
+                    note = trimmedNote,
+                    timestamp = effectiveTimestamp,
+                    isManual = true,
+                )
 
             viewModelScope.launch {
                 runCatching {
@@ -177,17 +178,17 @@ class QuickLogViewModel
                         repository.insertEntry(entryForCalibration)
                     }
                 }
-                .onSuccess {
-                    _uiState.update { it.copy(isSaving = false, step = QuickLogStep.SUCCESS) }
-                    // Fire-and-forget: calibration failure must not surface to the user
-                    viewModelScope.launch {
-                        runCatching { feedbackCalibration(entryForCalibration) }
+                    .onSuccess {
+                        _uiState.update { it.copy(isSaving = false, step = QuickLogStep.SUCCESS) }
+                        // Fire-and-forget: calibration failure must not surface to the user
+                        viewModelScope.launch {
+                            runCatching { feedbackCalibration(entryForCalibration) }
+                        }
                     }
-                }
-                .onFailure { e ->
-                    _uiState.update { it.copy(isSaving = false) }
-                    _events.send(QuickLogEvent.SaveError(e.message ?: "Failed to save entry"))
-                }
+                    .onFailure { e ->
+                        _uiState.update { it.copy(isSaving = false) }
+                        _events.send(QuickLogEvent.SaveError(e.message ?: "Failed to save entry"))
+                    }
             }
         }
 

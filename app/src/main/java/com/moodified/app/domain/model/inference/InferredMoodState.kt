@@ -2,7 +2,6 @@ package com.moodified.app.domain.model.inference
 
 import com.moodified.app.domain.model.mood.Arousal
 import com.moodified.app.domain.model.mood.Valence
-import com.moodified.app.domain.model.inference.ScoringEvent
 
 /**
  * Represents the final output of the Mood Inference Engine.
