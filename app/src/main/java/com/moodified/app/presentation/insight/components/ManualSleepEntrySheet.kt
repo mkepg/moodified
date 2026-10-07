@@ -1,5 +1,7 @@
 package com.moodified.app.presentation.insight.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,25 +10,44 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimeInput
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.moodified.app.core.theme.DeepSage
+import com.moodified.app.core.theme.DmSerifDisplay
+import com.moodified.app.core.theme.MilkDeep
+import com.moodified.app.core.theme.MilkWhite
 import com.moodified.app.core.theme.SageDim
 import com.moodified.app.core.theme.TextPrimary
+import com.moodified.app.core.theme.TextSecondary
 import com.moodified.app.core.theme.TextTertiary
 import com.moodified.app.domain.model.sleep.ManualSleepEntry
 import java.time.Instant
@@ -34,6 +55,9 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
+private const val MINUTES_PER_DAY = 24 * 60
+private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("h:mm a")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,36 +74,44 @@ fun ManualSleepEntrySheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        containerColor = MilkWhite,
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp),
         ) {
-            androidx.compose.material3.Text(
+            Text(
                 text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineSmall.copy(fontFamily = DmSerifDisplay),
                 color = TextPrimary,
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Sessions you log here replace the estimated sleep for this day.",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+            )
+            Spacer(Modifier.height(24.dp))
 
             if (existingEntries.isNotEmpty()) {
-                androidx.compose.material3.Text(
-                    text = "Logged sessions",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextTertiary,
-                )
-                Spacer(Modifier.height(8.dp))
+                ManualSleepSectionLabel("Logged sessions")
+                Spacer(Modifier.height(10.dp))
                 existingEntries.forEach { entry ->
                     ManualSleepEntryRow(entry = entry, onDelete = { onDelete(entry.id) })
+                    Spacer(Modifier.height(8.dp))
                 }
-                Spacer(Modifier.height(12.dp))
-                HorizontalDivider(color = SageDim.copy(alpha = 0.4f), thickness = 0.5.dp)
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider(color = SageDim.copy(alpha = 0.5f), thickness = 0.5.dp)
+                Spacer(Modifier.height(20.dp))
             }
 
-            AddSleepSessionRow(date = date, onAdd = onAdd)
+            ManualSleepSectionLabel("Add a session")
+            Spacer(Modifier.height(12.dp))
+            AddSleepSessionForm(date = date, onAdd = onAdd)
 
             if (existingEntries.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
@@ -87,13 +119,33 @@ fun ManualSleepEntrySheet(
                     onClick = onRevert,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 ) {
-                    androidx.compose.material3.Text("Revert to estimated", color = TextTertiary)
+                    Text(
+                        text = "Revert to estimated sleep",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = TextTertiary,
+                    )
                 }
             }
-
-            Spacer(Modifier.height(24.dp))
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun ManualSleepSectionLabel(text: String) {
+    Text(
+        text = text.uppercase(),
+        style =
+            MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                letterSpacing = 1.4.sp,
+                fontWeight = FontWeight.SemiBold,
+            ),
+        color = TextTertiary,
+    )
 }
 
 @Composable
@@ -102,72 +154,214 @@ private fun ManualSleepEntryRow(
     onDelete: () -> Unit,
 ) {
     val zone = ZoneId.systemDefault()
-    val fmt = DateTimeFormatter.ofPattern("h:mm a")
     val startLdt = Instant.ofEpochMilli(entry.startTimeMs).atZone(zone).toLocalDateTime()
     val endLdt = Instant.ofEpochMilli(entry.endTimeMs).atZone(zone).toLocalDateTime()
-    val label = "${startLdt.format(fmt)} → ${endLdt.format(fmt)}"
-    val durationMin = ((entry.endTimeMs - entry.startTimeMs) / 60_000L).toInt()
-    val hours = durationMin / 60
-    val mins = durationMin % 60
-    val duration = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
+    val durationMinutes = ((entry.endTimeMs - entry.startTimeMs) / 60_000L).toInt()
 
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = MilkDeep,
     ) {
-        Column {
-            androidx.compose.material3.Text(label, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
-            androidx.compose.material3.Text(duration, style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = "${startLdt.format(timeFormatter)}  →  ${endLdt.format(timeFormatter)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextPrimary,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = formatDuration(durationMinutes),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextTertiary,
+                )
+            }
+            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    imageVector = Icons.Rounded.Close,
+                    contentDescription = "Delete session",
+                    tint = TextTertiary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
-        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Close, contentDescription = "Delete", tint = TextTertiary)
+    }
+}
+
+private enum class SleepTimeField { START, END }
+
+@Composable
+private fun AddSleepSessionForm(
+    date: LocalDate,
+    onAdd: (startMs: Long, endMs: Long) -> Unit,
+) {
+    var startHour by rememberSaveable { mutableStateOf(23) }
+    var startMinute by rememberSaveable { mutableStateOf(0) }
+    var endHour by rememberSaveable { mutableStateOf(7) }
+    var endMinute by rememberSaveable { mutableStateOf(0) }
+    var editing by rememberSaveable { mutableStateOf<SleepTimeField?>(null) }
+
+    val startTime = LocalTime.of(startHour, startMinute)
+    val endTime = LocalTime.of(endHour, endMinute)
+    val rawMinutes = (endTime.toSecondOfDay() - startTime.toSecondOfDay()) / 60
+    val durationMinutes = if (rawMinutes < 0) rawMinutes + MINUTES_PER_DAY else rawMinutes
+
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        TimeFieldCard(
+            modifier = Modifier.weight(1f),
+            label = "Bedtime",
+            time = startTime,
+            onClick = { editing = SleepTimeField.START },
+        )
+        TimeFieldCard(
+            modifier = Modifier.weight(1f),
+            label = "Wake up",
+            time = endTime,
+            onClick = { editing = SleepTimeField.END },
+        )
+    }
+
+    Spacer(Modifier.height(14.dp))
+    Text(
+        text = if (durationMinutes > 0) formatDuration(durationMinutes) else "Pick two different times",
+        style = MaterialTheme.typography.titleMedium,
+        color = if (durationMinutes > 0) DeepSage else TextTertiary,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(Modifier.height(18.dp))
+
+    Button(
+        onClick = {
+            val zone = ZoneId.systemDefault()
+            val startMs = date.atTime(startTime).atZone(zone).toInstant().toEpochMilli()
+            val endDate = if (endTime <= startTime) date.plusDays(1) else date
+            val endMs = endDate.atTime(endTime).atZone(zone).toInstant().toEpochMilli()
+            onAdd(startMs, endMs)
+        },
+        enabled = durationMinutes > 0,
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = DeepSage, contentColor = MilkWhite),
+        modifier = Modifier.fillMaxWidth().height(52.dp),
+    ) {
+        Text("Add session", style = MaterialTheme.typography.labelLarge)
+    }
+
+    when (editing) {
+        SleepTimeField.START ->
+            SleepTimePickerDialog(
+                title = "Bedtime",
+                initialHour = startHour,
+                initialMinute = startMinute,
+                onConfirm = { h, m ->
+                    startHour = h
+                    startMinute = m
+                    editing = null
+                },
+                onDismiss = { editing = null },
+            )
+        SleepTimeField.END ->
+            SleepTimePickerDialog(
+                title = "Wake up",
+                initialHour = endHour,
+                initialMinute = endMinute,
+                onConfirm = { h, m ->
+                    endHour = h
+                    endMinute = m
+                    editing = null
+                },
+                onDismiss = { editing = null },
+            )
+        null -> Unit
+    }
+}
+
+@Composable
+private fun TimeFieldCard(
+    modifier: Modifier,
+    label: String,
+    time: LocalTime,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = MilkDeep,
+        border = BorderStroke(1.dp, SageDim.copy(alpha = 0.6f)),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Text(
+                text = label.uppercase(),
+                style =
+                    MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 9.sp,
+                        letterSpacing = 1.2.sp,
+                    ),
+                color = TextTertiary,
+            )
+            Spacer(Modifier.height(5.dp))
+            Text(
+                text = time.format(timeFormatter),
+                style = MaterialTheme.typography.titleMedium,
+                color = TextPrimary,
+            )
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddSleepSessionRow(
-    date: LocalDate,
-    onAdd: (startMs: Long, endMs: Long) -> Unit,
+private fun SleepTimePickerDialog(
+    title: String,
+    initialHour: Int,
+    initialMinute: Int,
+    onConfirm: (hour: Int, minute: Int) -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    val startState = rememberTimePickerState(initialHour = 23, initialMinute = 0, is24Hour = false)
-    val endState = rememberTimePickerState(initialHour = 7, initialMinute = 0, is24Hour = false)
+    val state = rememberTimePickerState(initialHour = initialHour, initialMinute = initialMinute, is24Hour = false)
 
-    androidx.compose.material3.Text(
-        text = "Add session",
-        style = MaterialTheme.typography.labelSmall,
-        color = TextTertiary,
-    )
-    Spacer(Modifier.height(8.dp))
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            androidx.compose.material3.Text("Start", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
-            TimeInput(state = startState)
-        }
-        androidx.compose.material3.Text("→", style = MaterialTheme.typography.bodyLarge, color = TextTertiary)
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            androidx.compose.material3.Text("End", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
-            TimeInput(state = endState)
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = RoundedCornerShape(28.dp), color = MilkWhite, tonalElevation = 6.dp) {
+            Column(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary,
+                    modifier = Modifier.align(Alignment.Start),
+                )
+                Spacer(Modifier.height(16.dp))
+                TimePicker(state = state)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = TextTertiary)
+                    }
+                    TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
+                        Text("Set", color = DeepSage, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
         }
     }
-    Spacer(Modifier.height(12.dp))
-    Button(
-        onClick = {
-            val zone = ZoneId.systemDefault()
-            val startLt = LocalTime.of(startState.hour, startState.minute)
-            val endLt = LocalTime.of(endState.hour, endState.minute)
-            val startMs = date.atTime(startLt).atZone(zone).toInstant().toEpochMilli()
-            val endDate = if (endLt < startLt) date.plusDays(1) else date
-            val endMs = endDate.atTime(endLt).atZone(zone).toInstant().toEpochMilli()
-            onAdd(startMs, endMs)
-        },
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        androidx.compose.material3.Text("Add")
+}
+
+private fun formatDuration(totalMinutes: Int): String {
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return when {
+        hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
+        hours > 0 -> "${hours}h"
+        else -> "${minutes}m"
     }
 }

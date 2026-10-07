@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,11 +18,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.moodified.app.core.theme.DeepSage
 import com.moodified.app.core.theme.ErrorRed
 import com.moodified.app.core.theme.SageDim
 import com.moodified.app.core.theme.TextPrimary
@@ -87,11 +93,26 @@ fun SleepTab(
             if (isReady) {
                 {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        TextButton(onClick = onLogSleepClick) {
-                            Text("Log sleep", style = MaterialTheme.typography.labelMedium)
+                        FilledTonalButton(
+                            onClick = onLogSleepClick,
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            colors =
+                                ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = SageDim.copy(alpha = 0.5f),
+                                    contentColor = DeepSage,
+                                ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Log sleep", style = MaterialTheme.typography.labelLarge)
                         }
                     }
                     state.sleepLastNight?.let { night ->
@@ -261,9 +282,9 @@ private fun SleepTabBarChart(
                                 Box(
                                     modifier =
                                         Modifier
-                                            .size(6.dp)
+                                            .size(7.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0xFF67C967))
+                                            .background(DeepSage)
                                             .align(Alignment.TopCenter),
                                 )
                             }
@@ -282,10 +303,17 @@ private fun SleepTabBarChart(
         Spacer(Modifier.height(16.dp))
         HorizontalDivider(color = SageDim.copy(alpha = 0.4f), thickness = 0.5.dp)
         Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             InsightLegendDot(color = Color(0xAA67C967), label = "Restful sleep")
             InsightLegendDot(color = ValenceNegative.copy(alpha = 0.6f), label = "Short sleep")
+            InsightLegendDot(color = DeepSage, label = "Manually logged")
         }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = "Tap any bar to add or correct that night's sleep.",
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+            color = TextTertiary,
+        )
         if (insight != null) {
             Spacer(Modifier.height(10.dp))
             Surface(
