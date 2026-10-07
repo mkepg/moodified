@@ -27,10 +27,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.moodified.app.core.theme.DeepSage
 import com.moodified.app.core.theme.MilkWhite
+import com.moodified.app.domain.model.sleep.ManualSleepEntry
 import com.moodified.app.presentation.insight.tabs.ActivityTab
 import com.moodified.app.presentation.insight.tabs.OverviewTab
 import com.moodified.app.presentation.insight.tabs.ScreenUseTab
 import com.moodified.app.presentation.insight.tabs.SleepTab
+import java.time.LocalDate
 
 @Composable
 fun InsightScreen(
@@ -38,6 +40,8 @@ fun InsightScreen(
     viewModel: InsightViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sheetDate by viewModel.sleepCorrectionSheetDate.collectAsStateWithLifecycle()
+    val sheetEntries by viewModel.sleepCorrectionEntries.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable(initialTab) { mutableStateOf(initialTab) }
 
     AnimatedContent(
@@ -52,6 +56,14 @@ fun InsightScreen(
                 state = state,
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
+                sleepCorrectionSheetDate = sheetDate,
+                sleepCorrectionEntries = sheetEntries,
+                onBarTap = viewModel::openSleepCorrectionSheet,
+                onLogSleepClick = { viewModel.openSleepCorrectionSheet(LocalDate.now()) },
+                onAddManualEntry = viewModel::addManualSleepEntry,
+                onDeleteManualEntry = viewModel::deleteManualSleepEntry,
+                onRevertToInferred = viewModel::revertToInferred,
+                onSheetDismiss = viewModel::closeSleepCorrectionSheet,
             )
         }
     }
@@ -72,6 +84,14 @@ private fun InsightContent(
     state: InsightUiState,
     selectedTab: InsightTab,
     onTabSelected: (InsightTab) -> Unit,
+    sleepCorrectionSheetDate: LocalDate?,
+    sleepCorrectionEntries: List<ManualSleepEntry>,
+    onBarTap: (LocalDate) -> Unit,
+    onLogSleepClick: () -> Unit,
+    onAddManualEntry: (LocalDate, Long, Long) -> Unit,
+    onDeleteManualEntry: (Long) -> Unit,
+    onRevertToInferred: (LocalDate) -> Unit,
+    onSheetDismiss: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize().background(MilkWhite)) {
         SecondaryTabRow(selectedTabIndex = selectedTab.ordinal) {
@@ -92,7 +112,18 @@ private fun InsightContent(
         when (selectedTab) {
             InsightTab.OVERVIEW -> OverviewTab(state)
             InsightTab.ACTIVITY -> ActivityTab(state)
-            InsightTab.SLEEP -> SleepTab(state)
+            InsightTab.SLEEP ->
+                SleepTab(
+                    state = state,
+                    onBarTap = onBarTap,
+                    onLogSleepClick = onLogSleepClick,
+                    sleepCorrectionSheetDate = sleepCorrectionSheetDate,
+                    sleepCorrectionEntries = sleepCorrectionEntries,
+                    onAddManualEntry = onAddManualEntry,
+                    onDeleteManualEntry = onDeleteManualEntry,
+                    onRevertToInferred = onRevertToInferred,
+                    onSheetDismiss = onSheetDismiss,
+                )
             InsightTab.SCREEN_USE -> ScreenUseTab(state)
         }
     }
