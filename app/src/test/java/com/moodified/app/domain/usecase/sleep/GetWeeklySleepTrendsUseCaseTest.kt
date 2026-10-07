@@ -1,6 +1,7 @@
 package com.moodified.app.domain.usecase.sleep
 
 import com.moodified.app.domain.model.sleep.DailySleepSummary
+import com.moodified.app.domain.model.sleep.ManualSleepEntry
 import com.moodified.app.domain.model.sleep.SleepSegment
 import com.moodified.app.domain.model.sleep.SleepSignal
 import com.moodified.app.domain.repository.SleepRepository
@@ -39,6 +40,14 @@ class GetWeeklySleepTrendsUseCaseTest {
         override suspend fun flushSleepDataToDb() = Unit
 
         override fun hasUsagePermission(): Boolean = false
+
+        override suspend fun saveManualSleepEntry(date: LocalDate, startTimeMs: Long, endTimeMs: Long): Long = 0L
+
+        override suspend fun deleteManualSleepEntry(id: Long) = Unit
+
+        override suspend fun clearManualSleepEntriesForDate(date: LocalDate) = Unit
+
+        override fun observeManualEntriesForDate(date: LocalDate): Flow<List<ManualSleepEntry>> = flowOf(emptyList())
     }
 
     private fun buildUseCase(summaries: List<DailySleepSummary>): GetWeeklySleepTrendsUseCase =

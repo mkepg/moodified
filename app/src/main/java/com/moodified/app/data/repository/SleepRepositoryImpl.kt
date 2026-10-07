@@ -6,11 +6,14 @@ import android.util.Log
 import com.moodified.app.core.coordination.PollingJob
 import com.moodified.app.core.coordination.TrackingCoordinator
 import com.moodified.app.core.utils.SleepTimeUtils
+import com.moodified.app.data.local.dao.sleep.ManualSleepEntryDao
 import com.moodified.app.data.local.dao.sleep.SleepSegmentDao
 import com.moodified.app.data.local.datasource.SleepPreferencesDataSource
 import com.moodified.app.data.local.datasource.UsageStatsDataSource
+import com.moodified.app.data.local.entity.sleep.ManualSleepEntryEntity
 import com.moodified.app.data.local.entity.sleep.SleepSegmentEntity
 import com.moodified.app.domain.model.sleep.DailySleepSummary
+import com.moodified.app.domain.model.sleep.ManualSleepEntry
 import com.moodified.app.domain.model.sleep.SleepSegment
 import com.moodified.app.domain.model.sleep.SleepSignal
 import com.moodified.app.domain.model.sleep.SleepStatus
@@ -23,8 +26,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import java.time.Instant
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -41,6 +46,7 @@ class SleepRepositoryImpl
     constructor(
         @ApplicationContext private val context: Context,
         private val sleepSegmentDao: SleepSegmentDao,
+        private val manualSleepEntryDao: ManualSleepEntryDao,
         private val preferencesDataSource: SleepPreferencesDataSource,
         private val usageStatsDataSource: UsageStatsDataSource,
         private val inferSleepSegmentsUseCase: CalculateSleepSegmentsUseCase,
@@ -227,20 +233,29 @@ class SleepRepositoryImpl
             val zone = ZoneId.systemDefault()
             val broadStartMs = endDate.minusDays(8).atTime(6, 0).atZone(zone).toInstant().toEpochMilli()
             val broadEndMs = endDate.plusDays(1).atTime(6, 0).atZone(zone).toInstant().toEpochMilli()
+            val rangeStartDate = endDate.minusDays(6).toString()
+            val rangeEndDate = endDate.toString()
 
-            return sleepSegmentDao.getSegmentsBetween(broadStartMs, broadEndMs)
-                .map { entities ->
-                    val all = entities.map { it.toDomain() }.sortedBy { it.startTime }
-                    val sessions = groupIntoSessions(all)
+            return combine(
+                sleepSegmentDao.getSegmentsBetween(broadStartMs, broadEndMs),
+                manualSleepEntryDao.getEntriesInDateRange(rangeStartDate, rangeEndDate),
+            ) { entities, manualEntities ->
+                val all = entities.map { it.toDomain() }.sortedBy { it.startTime }
+                val sessions = groupIntoSessions(all)
 
-                    (0L..6L).mapNotNull { daysBack ->
-                        val d = endDate.minusDays(daysBack)
+                (0L..6L).mapNotNull { daysBack ->
+                    val d = endDate.minusDays(daysBack)
+                    val manual = manualEntities.filter { it.date == d.toString() }
+                    if (manual.isNotEmpty()) {
+                        buildManualSummary(d.toString(), manual)
+                    } else {
                         val session =
                             sessions.firstOrNull { s -> s.last().endTime.toLocalDate() == d }
                                 ?: return@mapNotNull null
                         buildSummary(d.toString(), session)
                     }
                 }
+            }
         }
 
         override suspend fun persistSegments(segments: List<SleepSegment>) {
@@ -248,6 +263,27 @@ class SleepRepositoryImpl
         }
 
         override fun hasUsagePermission(): Boolean = usageStatsDataSource.hasPermission()
+
+        override suspend fun saveManualSleepEntry(
+            date: LocalDate,
+            startTimeMs: Long,
+            endTimeMs: Long,
+        ): Long =
+            manualSleepEntryDao.insertEntry(
+                ManualSleepEntryEntity(date = date.toString(), startTimeMillis = startTimeMs, endTimeMillis = endTimeMs),
+            )
+
+        override suspend fun deleteManualSleepEntry(id: Long) {
+            manualSleepEntryDao.deleteEntryById(id)
+        }
+
+        override suspend fun clearManualSleepEntriesForDate(date: LocalDate) {
+            manualSleepEntryDao.deleteAllForDate(date.toString())
+        }
+
+        override fun observeManualEntriesForDate(date: LocalDate): Flow<List<ManualSleepEntry>> =
+            manualSleepEntryDao.getEntriesForDate(date.toString())
+                .map { entities -> entities.map { it.toDomain() } }
 
         private fun groupIntoSessions(segments: List<SleepSegment>): List<List<SleepSegment>> {
             if (segments.isEmpty()) return emptyList()
@@ -263,6 +299,27 @@ class SleepRepositoryImpl
             }
             sessions.add(current)
             return sessions
+        }
+
+        private fun buildManualSummary(
+            date: String,
+            entries: List<ManualSleepEntryEntity>,
+        ): DailySleepSummary {
+            val zone = ZoneId.systemDefault()
+            val totalMinutes = entries.sumOf { ((it.endTimeMillis - it.startTimeMillis) / 60_000L).toInt() }
+            val earliest = entries.minByOrNull { it.startTimeMillis }
+            val sleepOnsetMinutes =
+                earliest?.let {
+                    val startLdt = Instant.ofEpochMilli(it.startTimeMillis).atZone(zone).toLocalDateTime()
+                    SleepTimeUtils.minutesSince6PM(startLdt)
+                }
+            return DailySleepSummary(
+                date = date,
+                totalSleepMinutes = totalMinutes,
+                awakenings = 0,
+                sleepOnsetMinutes = sleepOnsetMinutes,
+                isEstimated = false,
+            )
         }
 
         private fun buildSummary(
