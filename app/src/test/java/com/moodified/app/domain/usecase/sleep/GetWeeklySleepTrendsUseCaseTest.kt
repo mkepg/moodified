@@ -41,7 +41,11 @@ class GetWeeklySleepTrendsUseCaseTest {
 
         override fun hasUsagePermission(): Boolean = false
 
-        override suspend fun saveManualSleepEntry(date: LocalDate, startTimeMs: Long, endTimeMs: Long): Long = 0L
+        override suspend fun saveManualSleepEntry(
+            date: LocalDate,
+            startTimeMs: Long,
+            endTimeMs: Long,
+        ): Long = 0L
 
         override suspend fun deleteManualSleepEntry(id: Long) = Unit
 

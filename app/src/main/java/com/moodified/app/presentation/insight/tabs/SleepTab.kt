@@ -1,6 +1,7 @@
 package com.moodified.app.presentation.insight.tabs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,12 +13,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +37,7 @@ import com.moodified.app.core.theme.TextPrimary
 import com.moodified.app.core.theme.TextTertiary
 import com.moodified.app.core.theme.ValenceNegative
 import com.moodified.app.core.utils.DateTimeUtils
+import com.moodified.app.domain.model.sleep.ManualSleepEntry
 import com.moodified.app.domain.model.sleep.SleepTrends
 import com.moodified.app.presentation.insight.InsightUiState
 import com.moodified.app.presentation.insight.SleepBarPoint
@@ -42,12 +47,24 @@ import com.moodified.app.presentation.insight.components.InsightDomainTemplate
 import com.moodified.app.presentation.insight.components.InsightLegendDot
 import com.moodified.app.presentation.insight.components.InsightMetric
 import com.moodified.app.presentation.insight.components.InsightTodayCard
+import com.moodified.app.presentation.insight.components.ManualSleepEntrySheet
 import com.moodified.app.presentation.insight.components.drawInsightGridLines
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun SleepTab(state: InsightUiState) {
+fun SleepTab(
+    state: InsightUiState,
+    onBarTap: (LocalDate) -> Unit,
+    onLogSleepClick: () -> Unit,
+    sleepCorrectionSheetDate: LocalDate?,
+    sleepCorrectionEntries: List<ManualSleepEntry>,
+    onAddManualEntry: (LocalDate, Long, Long) -> Unit,
+    onDeleteManualEntry: (Long) -> Unit,
+    onRevertToInferred: (LocalDate) -> Unit,
+    onSheetDismiss: () -> Unit,
+) {
     val isReady = state.domainReadiness.sleep.isReady
     InsightDomainTemplate(
         title = "Sleep",
@@ -69,6 +86,14 @@ fun SleepTab(state: InsightUiState) {
         stats =
             if (isReady) {
                 {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onLogSleepClick) {
+                            Text("Log sleep", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
                     state.sleepLastNight?.let { night ->
                         val fellAsleepAt =
                             night.sleepOnsetMinutes?.let { DateTimeUtils.offsetMinutesToClockTime(it) } ?: "—"
@@ -92,6 +117,7 @@ fun SleepTab(state: InsightUiState) {
                 {
                     SleepTabBarChart(
                         points = state.sleepBarPoints,
+                        onBarTap = onBarTap,
                         insight = state.sleepMoodInsight,
                     )
                 }
@@ -99,10 +125,21 @@ fun SleepTab(state: InsightUiState) {
                 null
             },
     )
+
+    if (sleepCorrectionSheetDate != null) {
+        ManualSleepEntrySheet(
+            date = sleepCorrectionSheetDate,
+            existingEntries = sleepCorrectionEntries,
+            onAdd = { startMs, endMs -> onAddManualEntry(sleepCorrectionSheetDate, startMs, endMs) },
+            onDelete = onDeleteManualEntry,
+            onRevert = { onRevertToInferred(sleepCorrectionSheetDate) },
+            onDismiss = onSheetDismiss,
+        )
+    }
 }
 
 // ---------------------------------------------------------------------------
-// Private helpers (duplicated from InsightScreen.kt — Task 5 removes them there)
+// Private helpers
 // ---------------------------------------------------------------------------
 
 @Composable
@@ -142,6 +179,7 @@ private fun SleepTabTrendPill(
 @Composable
 private fun SleepTabBarChart(
     points: List<SleepBarPoint>,
+    onBarTap: (LocalDate) -> Unit,
     insight: String? = null,
 ) {
     if (points.isEmpty()) return
@@ -190,7 +228,7 @@ private fun SleepTabBarChart(
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        modifier = Modifier.weight(1f).fillMaxHeight().clickable { onBarTap(pt.date) },
                     ) {
                         Box(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -218,6 +256,16 @@ private fun SleepTabBarChart(
                                         modifier = Modifier.offset(y = (-14).dp),
                                     )
                                 }
+                            }
+                            if (!pt.isEstimated) {
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF67C967))
+                                            .align(Alignment.TopCenter),
+                                )
                             }
                         }
                         Spacer(Modifier.height(6.dp))

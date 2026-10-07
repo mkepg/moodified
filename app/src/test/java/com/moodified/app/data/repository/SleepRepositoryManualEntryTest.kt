@@ -7,7 +7,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class SleepRepositoryManualEntryTest {
-
     @Test
     fun `buildManualSummary logic sums durations from two entries on same date`() {
         val date = LocalDate.of(2026, 10, 7)
@@ -18,10 +17,11 @@ class SleepRepositoryManualEntryTest {
         val napStart = date.atTime(14, 0).atZone(zone).toInstant().toEpochMilli()
         val napEnd = date.atTime(15, 30).atZone(zone).toInstant().toEpochMilli()
 
-        val entries = listOf(
-            ManualSleepEntryEntity(id = 1, date = date.toString(), startTimeMillis = overnightStart, endTimeMillis = overnightEnd),
-            ManualSleepEntryEntity(id = 2, date = date.toString(), startTimeMillis = napStart, endTimeMillis = napEnd),
-        )
+        val entries =
+            listOf(
+                ManualSleepEntryEntity(id = 1, date = date.toString(), startTimeMillis = overnightStart, endTimeMillis = overnightEnd),
+                ManualSleepEntryEntity(id = 2, date = date.toString(), startTimeMillis = napStart, endTimeMillis = napEnd),
+            )
 
         val totalMinutes = entries.sumOf { ((it.endTimeMillis - it.startTimeMillis) / 60_000L).toInt() }
         assertEquals(570, totalMinutes) // 480 min overnight + 90 min nap
@@ -46,12 +46,13 @@ class SleepRepositoryManualEntryTest {
     @Test
     fun `manual entry date string matches LocalDate toString format`() {
         val date = LocalDate.of(2026, 10, 7)
-        val entity = ManualSleepEntryEntity(
-            id = 1,
-            date = date.toString(),
-            startTimeMillis = 0L,
-            endTimeMillis = 0L,
-        )
+        val entity =
+            ManualSleepEntryEntity(
+                id = 1,
+                date = date.toString(),
+                startTimeMillis = 0L,
+                endTimeMillis = 0L,
+            )
         assertEquals("2026-10-07", entity.date)
         assertEquals(date, LocalDate.parse(entity.date))
     }
@@ -59,12 +60,13 @@ class SleepRepositoryManualEntryTest {
     @Test
     fun `toDomain round-trips through fromDomain`() {
         val date = LocalDate.of(2026, 10, 7)
-        val original = ManualSleepEntryEntity(
-            id = 42,
-            date = date.toString(),
-            startTimeMillis = 1_000_000L,
-            endTimeMillis = 2_000_000L,
-        )
+        val original =
+            ManualSleepEntryEntity(
+                id = 42,
+                date = date.toString(),
+                startTimeMillis = 1_000_000L,
+                endTimeMillis = 2_000_000L,
+            )
         val domain = original.toDomain()
         val roundTripped = ManualSleepEntryEntity.fromDomain(domain)
 

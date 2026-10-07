@@ -316,7 +316,11 @@ class InsightViewModel
                 }
 
             val screenMoodInsight: String? =
-                moodCorrelation(dateToMood, screenPoints.associate { it.date to it.totalScreenMinutes.toFloat() }, invertedExpectation = true)?.let { r ->
+                moodCorrelation(
+                    dateToMood,
+                    screenPoints.associate { it.date to it.totalScreenMinutes.toFloat() },
+                    invertedExpectation = true,
+                )?.let { r ->
                     when (r.direction) {
                         Correlation.POSITIVE -> "Your mood was lower on ${r.highCount} of your heaviest screen-use days."
                         Correlation.NEGATIVE -> "Screen use and mood tracked together on ${r.highCount} days this week — more time didn't bring you down."
@@ -513,9 +517,10 @@ class InsightViewModel
                     .map { dateToValue[it]!! to dateToMood[it]!! }
             if (pairs.size < 3) return null
 
-            val median = pairs.map { it.first }.sorted().let { s ->
-                if (s.size % 2 == 0) (s[s.size / 2 - 1] + s[s.size / 2]) / 2f else s[s.size / 2]
-            }
+            val median =
+                pairs.map { it.first }.sorted().let { s ->
+                    if (s.size % 2 == 0) (s[s.size / 2 - 1] + s[s.size / 2]) / 2f else s[s.size / 2]
+                }
             val highPairs = pairs.filter { it.first >= median }
             val lowPairs = pairs.filter { it.first < median }
             val highMoodAvg = highPairs.map { it.second }.average()

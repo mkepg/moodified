@@ -3,7 +3,7 @@
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
     <ID>ComplexCondition:ProfileScreen.kt$(!hasNotifPermission &amp;&amp; state.isNotifPermanentlyDenied) || (requiresActivity &amp;&amp; !hasActivityPermission &amp;&amp; state.isActivityPermanentlyDenied)</ID>
-    <ID>CyclomaticComplexMethod:ActivityTab.kt$@Composable private fun ActivityTabStackedBarChart( points: List&lt;ActivityBarPoint&gt;, moodPoints: List&lt;Float?&gt; = emptyList(), )</ID>
+    <ID>CyclomaticComplexMethod:ActivityTab.kt$@Composable private fun ActivityTabStackedBarChart( points: List&lt;ActivityBarPoint&gt;, insight: String? = null, )</ID>
     <ID>CyclomaticComplexMethod:CalculateActivityIntensityUseCase.kt$CalculateActivityIntensityUseCase$private fun applyHysteresis( spm: Int, current: ActivityIntensity, ): ActivityIntensity</ID>
     <ID>CyclomaticComplexMethod:CalculateArousalEstimateUseCase.kt$CalculateArousalEstimateUseCase$operator fun invoke(signal: ActivitySignal): Arousal</ID>
     <ID>CyclomaticComplexMethod:CheckInScreen.kt$@Composable fun CheckInScreen( onQuickLog: () -&gt; Unit, onViewCalendar: () -&gt; Unit, onOpenCareAll: () -&gt; Unit, onEditEntry: (Long) -&gt; Unit, viewModel: CheckInViewModel = hiltViewModel(), )</ID>
@@ -25,7 +25,7 @@
     <ID>FunctionNaming:AboutScreen.kt$@Composable private fun AboutVersionLabel(onLongPress: (() -&gt; Unit)?)</ID>
     <ID>FunctionNaming:AboutScreen.kt$@OptIn(ExperimentalLayoutApi::class) @Composable private fun AboutMadeWithSection()</ID>
     <ID>FunctionNaming:ActivityTab.kt$@Composable fun ActivityTab(state: InsightUiState)</ID>
-    <ID>FunctionNaming:ActivityTab.kt$@Composable private fun ActivityTabStackedBarChart( points: List&lt;ActivityBarPoint&gt;, moodPoints: List&lt;Float?&gt; = emptyList(), )</ID>
+    <ID>FunctionNaming:ActivityTab.kt$@Composable private fun ActivityTabStackedBarChart( points: List&lt;ActivityBarPoint&gt;, insight: String? = null, )</ID>
     <ID>FunctionNaming:ActivityTab.kt$@Composable private fun ActivityTabTrendPill( label: String, value: String, warn: Boolean = false, )</ID>
     <ID>FunctionNaming:ActivityTab.kt$@Composable private fun ActivityTabTrendRow(trends: ActivityTrends)</ID>
     <ID>FunctionNaming:BatteryOptimizationCard.kt$@Composable fun BatteryOptimizationCard( isIgnoring: Boolean, onRequestIgnore: () -&gt; Unit, )</ID>
@@ -67,7 +67,7 @@
     <ID>FunctionNaming:InsightHeaders.kt$@Composable fun InsightHeader( title: String, subtitle: String, isTracking: Boolean, liveIndicatorColor: Color = ValenceNeutral, eyebrow: String? = null, onBack: (() -&gt; Unit)? = null, )</ID>
     <ID>FunctionNaming:InsightHeaders.kt$@Composable fun SectionLabel(title: String)</ID>
     <ID>FunctionNaming:InsightScreen.kt$@Composable fun InsightScreen( initialTab: InsightTab = InsightTab.OVERVIEW, viewModel: InsightViewModel = hiltViewModel(), )</ID>
-    <ID>FunctionNaming:InsightScreen.kt$@Composable private fun InsightContent( state: InsightUiState, selectedTab: InsightTab, onTabSelected: (InsightTab) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:InsightScreen.kt$@Composable private fun InsightContent( state: InsightUiState, selectedTab: InsightTab, onTabSelected: (InsightTab) -&gt; Unit, sleepCorrectionSheetDate: LocalDate?, sleepCorrectionEntries: List&lt;ManualSleepEntry&gt;, onBarTap: (LocalDate) -&gt; Unit, onLogSleepClick: () -&gt; Unit, onAddManualEntry: (LocalDate, Long, Long) -&gt; Unit, onDeleteManualEntry: (Long) -&gt; Unit, onRevertToInferred: (LocalDate) -&gt; Unit, onSheetDismiss: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:InsightScreen.kt$@Composable private fun InsightLoading()</ID>
     <ID>FunctionNaming:InsightStats.kt$@Composable fun BreakdownRow( label: String, value: String, note: String, )</ID>
     <ID>FunctionNaming:InsightStats.kt$@Composable fun StatTile( modifier: Modifier = Modifier, label: String, value: Any, subLabel: String, accentColor: Color, )</ID>
@@ -78,6 +78,9 @@
     <ID>FunctionNaming:LicensesScreen.kt$@Composable fun LicensesScreen(onBack: () -&gt; Unit)</ID>
     <ID>FunctionNaming:LicensesScreen.kt$@Composable private fun LicenseRow( license: License, isExpanded: Boolean, onToggle: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:LicensesScreen.kt$@Composable private fun LicensesHeader(onBack: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:ManualSleepEntrySheet.kt$@Composable private fun ManualSleepEntryRow( entry: ManualSleepEntry, onDelete: () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:ManualSleepEntrySheet.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun ManualSleepEntrySheet( date: LocalDate, existingEntries: List&lt;ManualSleepEntry&gt;, onAdd: (startMs: Long, endMs: Long) -&gt; Unit, onDelete: (id: Long) -&gt; Unit, onRevert: () -&gt; Unit, onDismiss: () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:ManualSleepEntrySheet.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable private fun AddSleepSessionRow( date: LocalDate, onAdd: (startMs: Long, endMs: Long) -&gt; Unit, )</ID>
     <ID>FunctionNaming:MicroInterventionComponents.kt$@Composable fun MicroInterventionRow( interventions: List&lt;InterventionAction.MicroIntervention&gt;, onClick: (InterventionAction.MicroIntervention) -&gt; Unit, )</ID>
     <ID>FunctionNaming:MicroInterventionComponents.kt$@Composable fun MicroInterventionSheetContent( intervention: InterventionAction.MicroIntervention, onDismiss: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:MoodifiedNavHost.kt$@Composable fun MoodifiedNavHost( quickLogTrigger: SharedFlow&lt;Unit&gt; = MutableSharedFlow(), openInboxTrigger: SharedFlow&lt;Unit&gt; = MutableSharedFlow(), startDestination: String = AppRoutes.CheckIn.route, )</ID>
@@ -131,12 +134,12 @@
     <ID>FunctionNaming:QuickLogSheet.kt$@Suppress("LongParameterList") @Composable private fun ArousalStep( isEditMode: Boolean, selectedArousal: Arousal?, note: String, timestamp: LocalDateTime, isTimestampCustomized: Boolean, onSelect: (Arousal) -&gt; Unit, onNoteChange: (String) -&gt; Unit, onTimestampChange: (LocalDateTime) -&gt; Unit, onResetTimestamp: () -&gt; Unit, onSave: () -&gt; Unit, onDelete: () -&gt; Unit, onBack: () -&gt; Unit, isSaving: Boolean, isDeleting: Boolean, )</ID>
     <ID>FunctionNaming:QuickLogSheet.kt$@Suppress("LongParameterList") @Composable private fun SheetHeader( title: String, subtitle: String, step: Int, showStepIndicator: Boolean, onDismiss: () -&gt; Unit, showBack: Boolean, onBack: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:ScreenUseTab.kt$@Composable fun ScreenUseTab(state: InsightUiState)</ID>
-    <ID>FunctionNaming:ScreenUseTab.kt$@Composable private fun ScreenUseTabBarChart( points: List&lt;ScreenTimeBarPoint&gt;, moodPoints: List&lt;Float?&gt; = emptyList(), )</ID>
+    <ID>FunctionNaming:ScreenUseTab.kt$@Composable private fun ScreenUseTabBarChart( points: List&lt;ScreenTimeBarPoint&gt;, insight: String? = null, )</ID>
     <ID>FunctionNaming:ScreenUseTab.kt$@Composable private fun ScreenUseTabTrendPill( label: String, value: String, warn: Boolean = false, )</ID>
     <ID>FunctionNaming:ScreenUseTab.kt$@Composable private fun ScreenUseTabTrendRow(trends: InteractionTrends)</ID>
     <ID>FunctionNaming:SharedStatTile.kt$@Composable fun SharedStatTile( modifier: Modifier, label: String, value: TileValue, subLabel: String, accentColor: Color, )</ID>
-    <ID>FunctionNaming:SleepTab.kt$@Composable fun SleepTab(state: InsightUiState)</ID>
-    <ID>FunctionNaming:SleepTab.kt$@Composable private fun SleepTabBarChart( points: List&lt;SleepBarPoint&gt;, moodPoints: List&lt;Float?&gt; = emptyList(), )</ID>
+    <ID>FunctionNaming:SleepTab.kt$@Composable fun SleepTab( state: InsightUiState, onBarTap: (LocalDate) -&gt; Unit, onLogSleepClick: () -&gt; Unit, sleepCorrectionSheetDate: LocalDate?, sleepCorrectionEntries: List&lt;ManualSleepEntry&gt;, onAddManualEntry: (LocalDate, Long, Long) -&gt; Unit, onDeleteManualEntry: (Long) -&gt; Unit, onRevertToInferred: (LocalDate) -&gt; Unit, onSheetDismiss: () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:SleepTab.kt$@Composable private fun SleepTabBarChart( points: List&lt;SleepBarPoint&gt;, onBarTap: (LocalDate) -&gt; Unit, insight: String? = null, )</ID>
     <ID>FunctionNaming:SleepTab.kt$@Composable private fun SleepTabTrendPill( label: String, value: String, warn: Boolean = false, )</ID>
     <ID>FunctionNaming:SleepTab.kt$@Composable private fun SleepTabTrendRow(trends: SleepTrends)</ID>
     <ID>FunctionNaming:Theme.kt$@Composable fun MoodifiedTheme(content: @Composable () -&gt; Unit)</ID>
@@ -146,7 +149,7 @@
     <ID>FunctionNaming:TrendAndNudgeCards.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun SwipeableMotivationNudge( nudge: InterventionAction.MotivationNudge, onDismiss: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:TrendAndNudgeCards.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun SwipeableTrendAlert( alert: InterventionAction.TrendAlert, onDismiss: () -&gt; Unit, )</ID>
     <ID>FunctionOnlyReturningConstant:DeviceSensorDataSource.kt$DeviceSensorDataSource$fun queryLatestArStillConfidence(): Int</ID>
-    <ID>LongMethod:ActivityTab.kt$@Composable private fun ActivityTabStackedBarChart( points: List&lt;ActivityBarPoint&gt;, moodPoints: List&lt;Float?&gt; = emptyList(), )</ID>
+    <ID>LongMethod:ActivityTab.kt$@Composable private fun ActivityTabStackedBarChart( points: List&lt;ActivityBarPoint&gt;, insight: String? = null, )</ID>
     <ID>LongMethod:CalendarScreen.kt$@Composable private fun CalendarCard( displayedMonth: YearMonth, selectedDate: LocalDate, dailyEntryCounts: Map&lt;LocalDate, Int&gt;, onSelectDate: (LocalDate) -&gt; Unit, onPreviousMonth: () -&gt; Unit, onNextMonth: () -&gt; Unit, )</ID>
     <ID>LongMethod:CalendarScreen.kt$@Composable private fun CalendarDayCell( modifier: Modifier, dayNumber: Int, isSelected: Boolean, isToday: Boolean, isFuture: Boolean, entryCount: Int, onClick: () -&gt; Unit, )</ID>
     <ID>LongMethod:CareScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun CareScreen(viewModel: CareViewModel = hiltViewModel())</ID>
@@ -169,8 +172,8 @@
     <ID>LongMethod:QuickLogSheet.kt$@Composable private fun WhenChip( timestamp: LocalDateTime, isCustomized: Boolean, onTimestampChange: (LocalDateTime) -&gt; Unit, onReset: () -&gt; Unit, )</ID>
     <ID>LongMethod:QuickLogSheet.kt$@Suppress("LongParameterList") @Composable private fun ArousalStep( isEditMode: Boolean, selectedArousal: Arousal?, note: String, timestamp: LocalDateTime, isTimestampCustomized: Boolean, onSelect: (Arousal) -&gt; Unit, onNoteChange: (String) -&gt; Unit, onTimestampChange: (LocalDateTime) -&gt; Unit, onResetTimestamp: () -&gt; Unit, onSave: () -&gt; Unit, onDelete: () -&gt; Unit, onBack: () -&gt; Unit, isSaving: Boolean, isDeleting: Boolean, )</ID>
     <ID>LongMethod:RuleBasedMoodInferenceEngine.kt$RuleBasedMoodInferenceEngine$private fun runPassiveInference( snapshot: DailyBehaviorSnapshot, calibration: CalibrationWeights, ): InferredMoodState</ID>
-    <ID>LongMethod:ScreenUseTab.kt$@Composable private fun ScreenUseTabBarChart( points: List&lt;ScreenTimeBarPoint&gt;, moodPoints: List&lt;Float?&gt; = emptyList(), )</ID>
-    <ID>LongMethod:SleepTab.kt$@Composable private fun SleepTabBarChart( points: List&lt;SleepBarPoint&gt;, moodPoints: List&lt;Float?&gt; = emptyList(), )</ID>
+    <ID>LongMethod:ScreenUseTab.kt$@Composable private fun ScreenUseTabBarChart( points: List&lt;ScreenTimeBarPoint&gt;, insight: String? = null, )</ID>
+    <ID>LongMethod:SleepTab.kt$@Composable private fun SleepTabBarChart( points: List&lt;SleepBarPoint&gt;, onBarTap: (LocalDate) -&gt; Unit, insight: String? = null, )</ID>
     <ID>LongMethod:TrackingService.kt$TrackingService$override fun onStartCommand( intent: Intent?, flags: Int, startId: Int, ): Int</ID>
     <ID>LongParameterList:ActivityRepositoryImpl.kt$ActivityRepositoryImpl$( @ApplicationContext private val context: Context, private val activityTelemetryDao: ActivityTelemetryDao, private val activityDailySummaryDao: ActivityDailySummaryDao, private val preferencesDataSource: ActivityPreferencesDataSource, private val deviceSensorDataSource: DeviceSensorDataSource, private val coordinator: TrackingCoordinator, private val calculateActivityIntensityUseCase: CalculateActivityIntensityUseCase, )</ID>
     <ID>LongParameterList:BuildDailyBehaviorSnapshotUseCase.kt$BuildDailyBehaviorSnapshotUseCase$( private val getDailySleepSummary: GetDailySleepSummaryUseCase, private val getDailyActivitySummary: GetDailyActivitySummaryUseCase, private val getDailyInteractionSummary: GetDailyInteractionSummaryUseCase, private val getWeeklySleepTrends: GetWeeklySleepTrendsUseCase, private val getWeeklyActivityTrends: GetWeeklyActivityTrendsUseCase, private val getWeeklyInteractionTrends: GetWeeklyInteractionTrendsUseCase, private val moodRepository: MoodRepository, )</ID>
@@ -181,17 +184,20 @@
     <ID>LongParameterList:CheckInScreen.kt$( greeting: String, dateLabel: String, hasLoggedToday: Boolean, recentDaySummaries: List&lt;DayMoodSummary&gt;, onViewCalendar: () -&gt; Unit, onDateSelected: (java.time.LocalDate) -&gt; Unit, )</ID>
     <ID>LongParameterList:InsightDomainTemplate.kt$( title: String, subtitle: String, isTracking: Boolean, onBack: (() -&gt; Unit)? = null, status: (@Composable ColumnScope.() -&gt; Unit)? = null, stats: (@Composable ColumnScope.() -&gt; Unit)? = null, breakdown: (@Composable ColumnScope.() -&gt; Unit)? = null, extras: (@Composable ColumnScope.() -&gt; Unit)? = null, )</ID>
     <ID>LongParameterList:InsightHeaders.kt$( title: String, subtitle: String, isTracking: Boolean, liveIndicatorColor: Color = ValenceNeutral, eyebrow: String? = null, onBack: (() -&gt; Unit)? = null, )</ID>
+    <ID>LongParameterList:InsightScreen.kt$( state: InsightUiState, selectedTab: InsightTab, onTabSelected: (InsightTab) -&gt; Unit, sleepCorrectionSheetDate: LocalDate?, sleepCorrectionEntries: List&lt;ManualSleepEntry&gt;, onBarTap: (LocalDate) -&gt; Unit, onLogSleepClick: () -&gt; Unit, onAddManualEntry: (LocalDate, Long, Long) -&gt; Unit, onDeleteManualEntry: (Long) -&gt; Unit, onRevertToInferred: (LocalDate) -&gt; Unit, onSheetDismiss: () -&gt; Unit, )</ID>
     <ID>LongParameterList:InsightViewModel.kt$InsightViewModel$( private val getMoodHistory: GetMoodHistoryUseCase, private val getWeeklySleepSummaries: GetWeeklySleepSummariesUseCase, private val getWeeklyActivitySummaries: GetWeeklyActivitySummariesUseCase, private val getWeeklyInteractionSummaries: GetWeeklyInteractionSummariesUseCase, private val getWeeklySleepTrends: GetWeeklySleepTrendsUseCase, private val getWeeklyActivityTrends: GetWeeklyActivityTrendsUseCase, private val getWeeklyInteractionTrends: GetWeeklyInteractionTrendsUseCase, private val inferenceEngine: RuleBasedMoodInferenceEngine, private val insightGenerator: InsightGenerator, private val sleepRepository: SleepRepository, private val activityRepository: ActivityRepository, private val interactionRepository: InteractionRepository, private val calibrationSource: CalibrationPreferencesDataSource, )</ID>
+    <ID>LongParameterList:ManualSleepEntrySheet.kt$( date: LocalDate, existingEntries: List&lt;ManualSleepEntry&gt;, onAdd: (startMs: Long, endMs: Long) -&gt; Unit, onDelete: (id: Long) -&gt; Unit, onRevert: () -&gt; Unit, onDismiss: () -&gt; Unit, )</ID>
     <ID>LongParameterList:ObserveTopCareInterventionUseCase.kt$ObserveTopCareInterventionUseCase$( private val buildDailyBehaviorSnapshot: BuildDailyBehaviorSnapshotUseCase, private val ruleBasedMoodInferenceEngine: RuleBasedMoodInferenceEngine, private val careEvaluationEngine: CareEvaluationEngine, private val observeActivitySignal: ObserveActivitySignalUseCase, private val observeInteractionSignal: ObserveInteractionSignalUseCase, private val getWeeklySleepSummaries: GetWeeklySleepSummariesUseCase, private val getWeeklyActivitySummaries: GetWeeklyActivitySummariesUseCase, private val getWeeklyInteractionSummaries: GetWeeklyInteractionSummariesUseCase, private val getMoodHistory: GetMoodHistoryUseCase, )</ID>
     <ID>LongParameterList:PrivacyScreen.kt$( icon: ImageVector, title: String, description: String, inProgress: Boolean = false, destructive: Boolean = false, onClick: () -&gt; Unit, )</ID>
     <ID>LongParameterList:ProfileScreen.kt$( icon: ImageVector, iconBgColor: Color, iconTint: Color, title: String, description: String, actionLabel: String? = null, onClick: () -&gt; Unit, )</ID>
     <ID>LongParameterList:ProfileScreen.kt$( onNavigateToPrivacy: () -&gt; Unit, onNavigateToHelp: () -&gt; Unit, onNavigateToAbout: () -&gt; Unit, onNavigateToInbox: () -&gt; Unit, showSnackbar: suspend (String) -&gt; Unit, viewModel: ProfileViewModel = hiltViewModel(), )</ID>
     <ID>LongParameterList:QuickLogSheet.kt$( modifier: Modifier, iconRes: Int, label: String, accentColor: Color, isSelected: Boolean, onClick: () -&gt; Unit, )</ID>
+    <ID>LongParameterList:SleepRepositoryImpl.kt$SleepRepositoryImpl$( @ApplicationContext private val context: Context, private val sleepSegmentDao: SleepSegmentDao, private val manualSleepEntryDao: ManualSleepEntryDao, private val preferencesDataSource: SleepPreferencesDataSource, private val usageStatsDataSource: UsageStatsDataSource, private val inferSleepSegmentsUseCase: CalculateSleepSegmentsUseCase, private val coordinator: TrackingCoordinator, )</ID>
+    <ID>LongParameterList:SleepTab.kt$( state: InsightUiState, onBarTap: (LocalDate) -&gt; Unit, onLogSleepClick: () -&gt; Unit, sleepCorrectionSheetDate: LocalDate?, sleepCorrectionEntries: List&lt;ManualSleepEntry&gt;, onAddManualEntry: (LocalDate, Long, Long) -&gt; Unit, onDeleteManualEntry: (Long) -&gt; Unit, onRevertToInferred: (LocalDate) -&gt; Unit, onSheetDismiss: () -&gt; Unit, )</ID>
     <ID>LoopWithTooManyJumpStatements:InsightViewModel.kt$InsightViewModel$for</ID>
     <ID>MatchingDeclarationName:InsightCharts.kt$WeeklyBarEntry</ID>
     <ID>MatchingDeclarationName:InterventionModels.kt$InterventionAction</ID>
     <ID>MatchingDeclarationName:SharedStatTile.kt$TileValue</ID>
-    <ID>MaxLineLength:ActivityTab.kt$moodPoints = if (state.weeklyMoodPoints.size == state.activityBarPoints.size) state.weeklyMoodPoints else emptyList()</ID>
     <ID>MaxLineLength:CalculateSleepSegmentsUseCase.kt$CalculateSleepSegmentsUseCase$val screenOffRatio = anchorCandidate.totalScreenOffMs.toFloat() / (anchorCandidate.endMs - anchorCandidate.startMs).coerceAtLeast(1)</ID>
     <ID>MaxLineLength:CheckInScreen.kt$description = "Needed to securely track screen time, late-night phone usage, and infer your sleep from screen inactivity."</ID>
     <ID>MaxLineLength:EvaluateBaseGuidanceUseCase.kt$EvaluateBaseGuidanceUseCase$description = "You've been still for a while. A quick stretch or short walk could help shake off the sluggishness."</ID>
@@ -218,6 +224,8 @@
     <ID>MaxLineLength:InsightGenerator.kt$InsightGenerator$body = "Your mood has ebbed and flowed this week, which is completely natural. We're here to help you spot the patterns."</ID>
     <ID>MaxLineLength:InsightGenerator.kt$InsightGenerator$body = "Your screen time has been quite high this week. It might feel good to schedule a small digital detox today."</ID>
     <ID>MaxLineLength:InsightGenerator.kt$InsightGenerator$body = "You’ve been averaging under 6 hours lately. If you’re feeling a bit drained, this might be why. Try to give yourself some extra grace today."</ID>
+    <ID>MaxLineLength:InsightViewModel.kt$InsightViewModel$Correlation.NEGATIVE -&gt; "Screen use and mood tracked together on ${r.highCount} days this week — more time didn't bring you down."</ID>
+    <ID>MaxLineLength:InsightViewModel.kt$InsightViewModel$Correlation.NEGATIVE -&gt; "Your mood dipped on ${r.highCount} of your busiest activity days — some recovery time may help."</ID>
     <ID>MaxLineLength:InteractionRepositoryImpl.kt$InteractionRepositoryImpl$averageSessionDurationMinutes = if (stats.sessions.isNotEmpty()) stats.sessions.sumOf { it.durationMinutes } / stats.sessions.size else 0</ID>
     <ID>MaxLineLength:InteractionSessionDao.kt$InteractionSessionDao$"SELECT * FROM interaction_sessions WHERE startTimeMillis &gt;= :startMillis AND startTimeMillis &lt; :endMillis ORDER BY startTimeMillis ASC"</ID>
     <ID>MaxLineLength:RuleBasedMoodInferenceEngine.kt$RuleBasedMoodInferenceEngine$(it.sessionCount &gt; InferenceConstants.HIGH_SESSION_COUNT &amp;&amp; it.averageSessionDurationMinutes &lt; InferenceConstants.SHORT_SESSION_DURATION_MINUTES)</ID>
@@ -225,7 +233,6 @@
     <ID>MaxLineLength:RuleBasedMoodInferenceEngine.kt$RuleBasedMoodInferenceEngine$scoringEvents += ScoringEvent("lingering fatigue from accumulated sleep debt", -logisticPenalty, 0, domain = InferenceDomain.SLEEP)</ID>
     <ID>MaxLineLength:RuleBasedMoodInferenceEngine.kt$RuleBasedMoodInferenceEngine$scoringEvents += ScoringEvent("vigorous exercise earlier today", decayedValence, decayedArousal, domain = InferenceDomain.ACTIVITY)</ID>
     <ID>MaxLineLength:RuleBasedMoodInferenceEngine.kt$RuleBasedMoodInferenceEngine$val activeMinBaseline = snapshot.activityTrends?.averageActiveMinutes?.takeIf { it &gt; 0 } ?: InferenceConstants.HIGH_ACTIVITY_MINUTES</ID>
-    <ID>MaxLineLength:ScreenUseTab.kt$moodPoints = if (state.weeklyMoodPoints.size == state.screenTimePoints.size) state.weeklyMoodPoints else emptyList()</ID>
     <ID>MaxLineLength:TelemetryWorker.kt$TelemetryWorker$val hasActivityPerm = ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.ACTIVITY_RECOGNITION) == android.content.pm.PackageManager.PERMISSION_GRANTED</ID>
     <ID>MaxLineLength:TrackingService.kt$TrackingService$if</ID>
     <ID>NestedBlockDepth:InteractionRepositoryImpl.kt$InteractionRepositoryImpl$private suspend fun backfillHistory()</ID>
@@ -251,6 +258,8 @@
     <ID>TooManyFunctions:ActivityRepository.kt$ActivityRepository</ID>
     <ID>TooManyFunctions:ActivityRepositoryImpl.kt$ActivityRepositoryImpl : ActivityRepository</ID>
     <ID>TooManyFunctions:InteractionRepository.kt$InteractionRepository</ID>
+    <ID>TooManyFunctions:SleepRepository.kt$SleepRepository</ID>
+    <ID>TooManyFunctions:SleepRepositoryImpl.kt$SleepRepositoryImpl : SleepRepository</ID>
     <ID>UnusedParameter:CheckInScreen.kt$onQuickLog: () -&gt; Unit</ID>
     <ID>UnusedParameter:EvaluateMicroPromptTriggersUseCase.kt$EvaluateMicroPromptTriggersUseCase$hour: Int</ID>
     <ID>UnusedParameter:InteractionRepositoryImpl.kt$InteractionRepositoryImpl$source: String</ID>
