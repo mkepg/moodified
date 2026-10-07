@@ -26,10 +26,13 @@ import com.moodified.app.domain.usecase.mood.GetMoodHistoryUseCase
 import com.moodified.app.domain.usecase.sleep.GetWeeklySleepSummariesUseCase
 import com.moodified.app.domain.usecase.sleep.GetWeeklySleepTrendsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class InsightViewModel
     @Inject
@@ -48,6 +51,55 @@ class InsightViewModel
         private val interactionRepository: InteractionRepository,
         private val calibrationSource: CalibrationPreferencesDataSource,
     ) : ViewModel() {
+        private val _sheetDate = MutableStateFlow<LocalDate?>(null)
+        val sleepCorrectionSheetDate: StateFlow<LocalDate?> = _sheetDate.asStateFlow()
+
+        val sleepCorrectionEntries: StateFlow<List<com.moodified.app.domain.model.sleep.ManualSleepEntry>> =
+            _sheetDate
+                .flatMapLatest { date ->
+                    if (date == null) {
+                        flowOf(emptyList())
+                    } else {
+                        sleepRepository.observeManualEntriesForDate(date)
+                    }
+                }
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000),
+                    initialValue = emptyList(),
+                )
+
+        fun openSleepCorrectionSheet(date: LocalDate) {
+            _sheetDate.value = date
+        }
+
+        fun closeSleepCorrectionSheet() {
+            _sheetDate.value = null
+        }
+
+        fun addManualSleepEntry(
+            date: LocalDate,
+            startMs: Long,
+            endMs: Long,
+        ) {
+            viewModelScope.launch {
+                sleepRepository.saveManualSleepEntry(date, startMs, endMs)
+            }
+        }
+
+        fun deleteManualSleepEntry(id: Long) {
+            viewModelScope.launch {
+                sleepRepository.deleteManualSleepEntry(id)
+            }
+        }
+
+        fun revertToInferred(date: LocalDate) {
+            viewModelScope.launch {
+                sleepRepository.clearManualSleepEntriesForDate(date)
+                closeSleepCorrectionSheet()
+            }
+        }
+
         val uiState: StateFlow<InsightUiState> =
             midnightTickerFlow()
                 .flatMapLatest { today ->
