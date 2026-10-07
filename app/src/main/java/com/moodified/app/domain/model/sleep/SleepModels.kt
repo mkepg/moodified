@@ -1,5 +1,6 @@
 package com.moodified.app.domain.model.sleep
 
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 enum class SleepStatus {
@@ -51,4 +52,11 @@ data class SleepTrends(
     val sleepGoalMinutes: Int = 480,
     val inferredSleepGoalMinutes: Int = 480,
     val baselineSleepOnsetMinutes: Int? = null,
+)
+
+data class ManualSleepEntry(
+    val id: Long = 0,
+    val date: LocalDate,
+    val startTimeMs: Long,
+    val endTimeMs: Long,
 )

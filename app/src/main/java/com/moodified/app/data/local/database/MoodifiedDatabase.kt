@@ -11,6 +11,7 @@ import com.moodified.app.data.local.dao.interaction.InteractionSessionDao
 import com.moodified.app.data.local.dao.intervention.InterventionHistoryDao
 import com.moodified.app.data.local.dao.mood.MoodEntryDao
 import com.moodified.app.data.local.dao.notification.NotificationRecordDao
+import com.moodified.app.data.local.dao.sleep.ManualSleepEntryDao
 import com.moodified.app.data.local.dao.sleep.SleepSegmentDao
 import com.moodified.app.data.local.entity.activity.ActivityDailySummaryEntity
 import com.moodified.app.data.local.entity.activity.ActivityTelemetryEntity
@@ -19,6 +20,7 @@ import com.moodified.app.data.local.entity.interaction.InteractionSessionEntity
 import com.moodified.app.data.local.entity.intervention.InterventionHistoryEntity
 import com.moodified.app.data.local.entity.mood.MoodEntryEntity
 import com.moodified.app.data.local.entity.notification.NotificationRecordEntity
+import com.moodified.app.data.local.entity.sleep.ManualSleepEntryEntity
 import com.moodified.app.data.local.entity.sleep.SleepSegmentEntity
 
 @Database(
@@ -31,8 +33,9 @@ import com.moodified.app.data.local.entity.sleep.SleepSegmentEntity
         InteractionDailySummaryEntity::class,
         InterventionHistoryEntity::class,
         NotificationRecordEntity::class,
+        ManualSleepEntryEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,
 )
 abstract class MoodifiedDatabase : RoomDatabase() {
@@ -51,6 +54,8 @@ abstract class MoodifiedDatabase : RoomDatabase() {
     abstract fun interventionHistoryDao(): InterventionHistoryDao
 
     abstract fun notificationRecordDao(): NotificationRecordDao
+
+    abstract fun manualSleepEntryDao(): ManualSleepEntryDao
 
     companion object {
         const val DATABASE_NAME = "moodified_db"
@@ -219,6 +224,22 @@ abstract class MoodifiedDatabase : RoomDatabase() {
                         """
                         CREATE INDEX IF NOT EXISTS `index_notification_records_deliveredAt`
                           ON `notification_records`(`deliveredAt`)
+                        """.trimIndent(),
+                    )
+                }
+            }
+
+        val MIGRATION_15_16 =
+            object : Migration(15, 16) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `manual_sleep_entries` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `date` TEXT NOT NULL,
+                            `startTimeMillis` INTEGER NOT NULL,
+                            `endTimeMillis` INTEGER NOT NULL
+                        )
                         """.trimIndent(),
                     )
                 }

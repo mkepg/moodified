@@ -9,6 +9,7 @@ import com.moodified.app.data.local.dao.interaction.InteractionSessionDao
 import com.moodified.app.data.local.dao.intervention.InterventionHistoryDao
 import com.moodified.app.data.local.dao.mood.MoodEntryDao
 import com.moodified.app.data.local.dao.notification.NotificationRecordDao
+import com.moodified.app.data.local.dao.sleep.ManualSleepEntryDao
 import com.moodified.app.data.local.dao.sleep.SleepSegmentDao
 import com.moodified.app.data.local.database.MoodifiedDatabase
 import com.moodified.app.data.repository.ActivityRepositoryImpl
@@ -54,6 +55,7 @@ object DatabaseModule {
                 MoodifiedDatabase.MIGRATION_12_13,
                 MoodifiedDatabase.MIGRATION_13_14,
                 MoodifiedDatabase.MIGRATION_14_15,
+                MoodifiedDatabase.MIGRATION_15_16,
             )
             .build()
 
@@ -80,6 +82,9 @@ object DatabaseModule {
 
     @Provides @Singleton
     fun provideNotificationRecordDao(db: MoodifiedDatabase): NotificationRecordDao = db.notificationRecordDao()
+
+    @Provides @Singleton
+    fun provideManualSleepEntryDao(db: MoodifiedDatabase): ManualSleepEntryDao = db.manualSleepEntryDao()
 }
 
 @Module
