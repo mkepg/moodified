@@ -35,10 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moodified.app.core.theme.ArousalHigh
 import com.moodified.app.core.theme.ArousalMid
-import com.moodified.app.core.theme.ErrorRed
 import com.moodified.app.core.theme.MilkDeep
 import com.moodified.app.core.theme.SageDim
-import com.moodified.app.core.theme.TextPrimary
 import com.moodified.app.core.theme.TextTertiary
 import com.moodified.app.core.theme.ValencePositive
 import com.moodified.app.domain.model.activity.ActivityTrends
@@ -84,7 +82,9 @@ fun ActivityTab(state: InsightUiState) {
         stats =
             if (isReady) {
                 {
-                    state.activityToday?.let { today ->
+                    val trendMetrics = state.activityTrends?.let { activityTrendMetrics(it) }
+                    val today = state.activityToday
+                    if (today != null) {
                         InsightTodayCard(
                             title = "Today",
                             metrics =
@@ -93,9 +93,11 @@ fun ActivityTab(state: InsightUiState) {
                                     InsightMetric("Active", "${today.activeMinutes}m"),
                                     InsightMetric("Sedentary", "${today.sedentaryMinutes}m"),
                                 ),
+                            trendMetrics = trendMetrics,
                         )
+                    } else if (trendMetrics != null) {
+                        InsightTodayCard(title = "This week", metrics = trendMetrics)
                     }
-                    state.activityTrends?.let { ActivityTabTrendRow(it) }
                 }
             } else {
                 null
@@ -118,33 +120,12 @@ fun ActivityTab(state: InsightUiState) {
 // Private helpers (duplicated from InsightScreen.kt — Task 5 removes them there)
 // ---------------------------------------------------------------------------
 
-@Composable
-private fun ActivityTabTrendRow(trends: ActivityTrends) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        ActivityTabTrendPill(label = "avg steps", value = "%,d".format(trends.averageSteps))
-        ActivityTabTrendPill(label = "active min", value = "${trends.averageActiveMinutes}m")
-        ActivityTabTrendPill(label = "consistency", value = "${trends.consistencyScore}%")
-    }
-}
-
-@Composable
-private fun ActivityTabTrendPill(
-    label: String,
-    value: String,
-    warn: Boolean = false,
-) {
-    Column {
-        Text(text = value, style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp), color = if (warn) ErrorRed else TextPrimary)
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, letterSpacing = 0.8.sp),
-            color = TextTertiary,
-        )
-    }
-}
+private fun activityTrendMetrics(trends: ActivityTrends): List<InsightMetric> =
+    listOf(
+        InsightMetric("avg steps", "%,d".format(trends.averageSteps)),
+        InsightMetric("active min", "${trends.averageActiveMinutes}m"),
+        InsightMetric("consistency", "${trends.consistencyScore}%"),
+    )
 
 @Composable
 private fun ActivityTabStackedBarChart(

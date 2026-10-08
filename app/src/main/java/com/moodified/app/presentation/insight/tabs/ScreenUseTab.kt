@@ -34,10 +34,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moodified.app.core.theme.ArousalLow
-import com.moodified.app.core.theme.ErrorRed
 import com.moodified.app.core.theme.MilkDeep
 import com.moodified.app.core.theme.SageDim
-import com.moodified.app.core.theme.TextPrimary
 import com.moodified.app.core.theme.TextSecondary
 import com.moodified.app.core.theme.TextTertiary
 import com.moodified.app.core.theme.ValenceNeutral
@@ -79,7 +77,9 @@ fun ScreenUseTab(state: InsightUiState) {
         stats =
             if (isReady) {
                 {
-                    state.phoneToday?.let { today ->
+                    val trendMetrics = state.interactionTrends?.let { screenUseTrendMetrics(it) }
+                    val today = state.phoneToday
+                    if (today != null) {
                         InsightTodayCard(
                             title = "Today",
                             metrics =
@@ -88,9 +88,11 @@ fun ScreenUseTab(state: InsightUiState) {
                                     InsightMetric("Unlocks", "${today.unlockCount}"),
                                     InsightMetric("Late Night", DateTimeUtils.formatMinutes(today.lateNightUsageMinutes)),
                                 ),
+                            trendMetrics = trendMetrics,
                         )
+                    } else if (trendMetrics != null) {
+                        InsightTodayCard(title = "This week", metrics = trendMetrics)
                     }
-                    state.interactionTrends?.let { ScreenUseTabTrendRow(it) }
                 }
             } else {
                 null
@@ -113,39 +115,19 @@ fun ScreenUseTab(state: InsightUiState) {
 // Private helpers (duplicated from InsightScreen.kt — Task 5 removes them there)
 // ---------------------------------------------------------------------------
 
-@Composable
-private fun ScreenUseTabTrendRow(trends: InteractionTrends) {
+private fun screenUseTrendMetrics(trends: InteractionTrends): List<InsightMetric> {
     val sh = trends.averageScreenTimeMinutes / 60
     val sm = trends.averageScreenTimeMinutes % 60
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        ScreenUseTabTrendPill(label = "avg screen", value = "${sh}h ${sm}m")
-        if (trends.averageLateNightMinutes > 0) {
-            ScreenUseTabTrendPill(
-                label = "late night",
-                value = "${trends.averageLateNightMinutes}m",
+    val metrics = mutableListOf(InsightMetric("avg screen", "${sh}h ${sm}m"))
+    if (trends.averageLateNightMinutes > 0) {
+        metrics +=
+            InsightMetric(
+                "late night",
+                "${trends.averageLateNightMinutes}m",
                 warn = trends.averageLateNightMinutes > 30,
             )
-        }
     }
-}
-
-@Composable
-private fun ScreenUseTabTrendPill(
-    label: String,
-    value: String,
-    warn: Boolean = false,
-) {
-    Column {
-        Text(text = value, style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp), color = if (warn) ErrorRed else TextPrimary)
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, letterSpacing = 0.8.sp),
-            color = TextTertiary,
-        )
-    }
+    return metrics
 }
 
 @Composable

@@ -59,7 +59,6 @@ fun InsightScreen(
                 sleepCorrectionSheetDate = sheetDate,
                 sleepCorrectionEntries = sheetEntries,
                 onBarTap = viewModel::openSleepCorrectionSheet,
-                onLogSleepClick = { viewModel.openSleepCorrectionSheet(LocalDate.now()) },
                 onAddManualEntry = viewModel::addManualSleepEntry,
                 onDeleteManualEntry = viewModel::deleteManualSleepEntry,
                 onRevertToInferred = viewModel::revertToInferred,
@@ -87,7 +86,6 @@ private fun InsightContent(
     sleepCorrectionSheetDate: LocalDate?,
     sleepCorrectionEntries: List<ManualSleepEntry>,
     onBarTap: (LocalDate) -> Unit,
-    onLogSleepClick: () -> Unit,
     onAddManualEntry: (LocalDate, Long, Long) -> Unit,
     onDeleteManualEntry: (Long) -> Unit,
     onRevertToInferred: (LocalDate) -> Unit,
@@ -116,7 +114,6 @@ private fun InsightContent(
                 SleepTab(
                     state = state,
                     onBarTap = onBarTap,
-                    onLogSleepClick = onLogSleepClick,
                     sleepCorrectionSheetDate = sleepCorrectionSheetDate,
                     sleepCorrectionEntries = sleepCorrectionEntries,
                     onAddManualEntry = onAddManualEntry,

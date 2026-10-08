@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,7 +20,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moodified.app.core.theme.DmSerifDisplay
+import com.moodified.app.core.theme.ErrorRed
 import com.moodified.app.core.theme.MilkDeep
+import com.moodified.app.core.theme.SageDim
 import com.moodified.app.core.theme.TextPrimary
 import com.moodified.app.core.theme.TextTertiary
 
@@ -28,6 +31,7 @@ fun InsightTodayCard(
     title: String,
     metrics: List<InsightMetric>,
     modifier: Modifier = Modifier,
+    trendMetrics: List<InsightMetric>? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
@@ -80,6 +84,28 @@ fun InsightTodayCard(
                             color = TextTertiary,
                             textAlign = TextAlign.Center,
                         )
+                    }
+                }
+            }
+
+            if (!trendMetrics.isNullOrEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                HorizontalDivider(color = SageDim.copy(alpha = 0.5f), thickness = 0.5.dp)
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    trendMetrics.forEach { metric ->
+                        Column {
+                            Text(
+                                text = metric.value,
+                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp),
+                                color = if (metric.warn) ErrorRed else TextPrimary,
+                            )
+                            Text(
+                                text = metric.label.uppercase(),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, letterSpacing = 0.8.sp),
+                                color = TextTertiary,
+                            )
+                        }
                     }
                 }
             }

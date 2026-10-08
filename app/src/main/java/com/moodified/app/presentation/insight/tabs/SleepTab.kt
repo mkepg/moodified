@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -18,12 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,9 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moodified.app.core.theme.DeepSage
-import com.moodified.app.core.theme.ErrorRed
 import com.moodified.app.core.theme.SageDim
-import com.moodified.app.core.theme.TextPrimary
 import com.moodified.app.core.theme.TextTertiary
 import com.moodified.app.core.theme.ValenceNegative
 import com.moodified.app.core.utils.DateTimeUtils
@@ -63,7 +55,6 @@ import java.util.Locale
 fun SleepTab(
     state: InsightUiState,
     onBarTap: (LocalDate) -> Unit,
-    onLogSleepClick: () -> Unit,
     sleepCorrectionSheetDate: LocalDate?,
     sleepCorrectionEntries: List<ManualSleepEntry>,
     onAddManualEntry: (LocalDate, Long, Long) -> Unit,
@@ -92,30 +83,9 @@ fun SleepTab(
         stats =
             if (isReady) {
                 {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        FilledTonalButton(
-                            onClick = onLogSleepClick,
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            colors =
-                                ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = SageDim.copy(alpha = 0.5f),
-                                    contentColor = DeepSage,
-                                ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text("Log sleep", style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
-                    state.sleepLastNight?.let { night ->
+                    val trendMetrics = state.sleepTrends?.let { sleepTrendMetrics(it) }
+                    val night = state.sleepLastNight
+                    if (night != null) {
                         val fellAsleepAt =
                             night.sleepOnsetMinutes?.let { DateTimeUtils.offsetMinutesToClockTime(it) } ?: "—"
                         InsightTodayCard(
@@ -126,9 +96,11 @@ fun SleepTab(
                                     InsightMetric("Awakenings", "${night.awakenings}"),
                                     InsightMetric("Fell asleep", fellAsleepAt),
                                 ),
+                            trendMetrics = trendMetrics,
                         )
+                    } else if (trendMetrics != null) {
+                        InsightTodayCard(title = "This week", metrics = trendMetrics)
                     }
-                    state.sleepTrends?.let { SleepTabTrendRow(it) }
                 }
             } else {
                 null
@@ -163,38 +135,17 @@ fun SleepTab(
 // Private helpers
 // ---------------------------------------------------------------------------
 
-@Composable
-private fun SleepTabTrendRow(trends: SleepTrends) {
+private fun sleepTrendMetrics(trends: SleepTrends): List<InsightMetric> {
     val avgHours = trends.averageSleepMinutes / 60
     val avgMins = trends.averageSleepMinutes % 60
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        SleepTabTrendPill(label = "avg", value = "${avgHours}h ${avgMins}m")
-        if (trends.totalSleepDebtMinutes > 0) {
-            val dh = trends.totalSleepDebtMinutes / 60
-            val dm = trends.totalSleepDebtMinutes % 60
-            SleepTabTrendPill(label = "lost rest", value = "${dh}h ${dm}m", warn = true)
-        }
-        SleepTabTrendPill(label = "consistency", value = "${trends.consistencyScore}%")
+    val metrics = mutableListOf(InsightMetric("avg", "${avgHours}h ${avgMins}m"))
+    if (trends.totalSleepDebtMinutes > 0) {
+        val dh = trends.totalSleepDebtMinutes / 60
+        val dm = trends.totalSleepDebtMinutes % 60
+        metrics += InsightMetric("lost rest", "${dh}h ${dm}m", warn = true)
     }
-}
-
-@Composable
-private fun SleepTabTrendPill(
-    label: String,
-    value: String,
-    warn: Boolean = false,
-) {
-    Column {
-        Text(text = value, style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp), color = if (warn) ErrorRed else TextPrimary)
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, letterSpacing = 0.8.sp),
-            color = TextTertiary,
-        )
-    }
+    metrics += InsightMetric("consistency", "${trends.consistencyScore}%")
+    return metrics
 }
 
 @Composable
