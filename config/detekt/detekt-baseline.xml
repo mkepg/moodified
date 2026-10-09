@@ -71,6 +71,7 @@
     <ID>FunctionNaming:InsightStats.kt$@Composable fun StatTile( modifier: Modifier = Modifier, label: String, value: Any, subLabel: String, accentColor: Color, )</ID>
     <ID>FunctionNaming:InsightStats.kt$@Composable fun StatusBadge( text: String, color: Color, )</ID>
     <ID>FunctionNaming:InsightTodayCard.kt$@Composable fun InsightTodayCard( title: String, metrics: List&lt;InsightMetric&gt;, modifier: Modifier = Modifier, trendMetrics: List&lt;InsightMetric&gt;? = null, )</ID>
+    <ID>FunctionNaming:InsightTodayCard.kt$@Composable private fun InsightTrendRow(metrics: List&lt;InsightMetric&gt;)</ID>
     <ID>FunctionNaming:InterventionCards.kt$@Composable fun ActiveGuidanceCard( action: InterventionAction, onHelpful: () -&gt; Unit, onLater: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:InterventionCards.kt$@Composable fun GuidedRoutineCard( routine: InterventionAction.GuidedRoutine, onComplete: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:LicensesScreen.kt$@Composable fun LicensesScreen(onBack: () -&gt; Unit)</ID>

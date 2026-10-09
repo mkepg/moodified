@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moodified.app.core.theme.DeepSage
 import com.moodified.app.core.theme.SageDim
+import com.moodified.app.core.theme.TextSecondary
 import com.moodified.app.core.theme.TextTertiary
 import com.moodified.app.core.theme.ValenceNegative
 import com.moodified.app.core.utils.DateTimeUtils
@@ -275,7 +276,7 @@ private fun SleepTabBarChart(
                 Text(
                     text = insight,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextTertiary,
+                    color = TextSecondary,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                 )
             }

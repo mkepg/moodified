@@ -37,6 +37,7 @@ import com.moodified.app.core.theme.ArousalHigh
 import com.moodified.app.core.theme.ArousalMid
 import com.moodified.app.core.theme.MilkDeep
 import com.moodified.app.core.theme.SageDim
+import com.moodified.app.core.theme.TextSecondary
 import com.moodified.app.core.theme.TextTertiary
 import com.moodified.app.core.theme.ValencePositive
 import com.moodified.app.domain.model.activity.ActivityTrends
@@ -309,7 +310,7 @@ private fun ActivityTabStackedBarChart(
                 Text(
                     text = insight,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextTertiary,
+                    color = TextSecondary,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                 )
             }

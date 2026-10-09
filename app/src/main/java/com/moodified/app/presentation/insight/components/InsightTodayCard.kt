@@ -92,22 +92,35 @@ fun InsightTodayCard(
                 Spacer(Modifier.height(14.dp))
                 HorizontalDivider(color = SageDim.copy(alpha = 0.5f), thickness = 0.5.dp)
                 Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    trendMetrics.forEach { metric ->
-                        Column {
-                            Text(
-                                text = metric.value,
-                                style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp),
-                                color = if (metric.warn) ErrorRed else TextPrimary,
-                            )
-                            Text(
-                                text = metric.label.uppercase(),
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, letterSpacing = 0.8.sp),
-                                color = TextTertiary,
-                            )
-                        }
-                    }
-                }
+                InsightTrendRow(trendMetrics)
+            }
+        }
+    }
+}
+
+@Composable
+private fun InsightTrendRow(metrics: List<InsightMetric>) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        metrics.forEach { metric ->
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = metric.value,
+                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 13.sp),
+                    color = if (metric.warn) ErrorRed else TextPrimary,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = metric.label.uppercase(),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, letterSpacing = 0.8.sp),
+                    color = TextTertiary,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }
