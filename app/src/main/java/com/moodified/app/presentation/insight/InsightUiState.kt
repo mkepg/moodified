@@ -64,10 +64,12 @@ data class MoodChartPoint(
     val isManual: Boolean,
 )
 
+/** One day on the sleep chart. [hasData] is false for a day with nothing detected or logged. */
 data class SleepBarPoint(
     val date: LocalDate,
     val totalSleepMinutes: Int,
-    val isEstimated: Boolean,
+    val hasManualEntries: Boolean,
+    val hasData: Boolean = true,
 )
 
 data class ActivityBarPoint(
@@ -150,7 +152,6 @@ data class InsightUiState(
     val daysWithData: Int = 0,
     val moodStability: MoodStability? = null,
     val todayTimeline: List<IntradayTimelineEvent> = emptyList(),
-    val weeklyMoodPoints: List<Float?> = emptyList(),
     val activityMoodInsight: String? = null,
     val sleepMoodInsight: String? = null,
     val screenMoodInsight: String? = null,

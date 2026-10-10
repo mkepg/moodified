@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -50,6 +51,8 @@ import com.moodified.app.core.theme.TextPrimary
 import com.moodified.app.core.theme.TextSecondary
 import com.moodified.app.core.theme.TextTertiary
 import com.moodified.app.domain.model.sleep.ManualSleepEntry
+import com.moodified.app.domain.model.sleep.SleepWindow
+import com.moodified.app.domain.usecase.sleep.ManualSleepAnchoring
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -63,6 +66,8 @@ private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("h:mm
 @Composable
 fun ManualSleepEntrySheet(
     date: LocalDate,
+    estimatedNight: SleepWindow?,
+    estimateReplaced: Boolean,
     existingEntries: List<ManualSleepEntry>,
     onAdd: (startMs: Long, endMs: Long) -> Unit,
     onDelete: (id: Long) -> Unit,
@@ -91,14 +96,26 @@ fun ManualSleepEntrySheet(
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Sessions you log here replace the estimated sleep for this day.",
+                text =
+                    if (estimatedNight != null) {
+                        "Naps add to your total. A session that overlaps the estimated night replaces it."
+                    } else {
+                        "No sleep was detected for this day. Anything you log here becomes its sleep."
+                    },
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
             )
             Spacer(Modifier.height(24.dp))
 
+            if (estimatedNight != null) {
+                ManualSleepSectionLabel("Estimated night")
+                Spacer(Modifier.height(10.dp))
+                EstimatedNightRow(night = estimatedNight, replaced = estimateReplaced)
+                Spacer(Modifier.height(20.dp))
+            }
+
             if (existingEntries.isNotEmpty()) {
-                ManualSleepSectionLabel("Logged sessions")
+                ManualSleepSectionLabel("Logged by you")
                 Spacer(Modifier.height(10.dp))
                 existingEntries.forEach { entry ->
                     ManualSleepEntryRow(entry = entry, onDelete = { onDelete(entry.id) })
@@ -113,7 +130,7 @@ fun ManualSleepEntrySheet(
             Spacer(Modifier.height(12.dp))
             AddSleepSessionForm(date = date, onAdd = onAdd)
 
-            if (existingEntries.isNotEmpty()) {
+            if (existingEntries.isNotEmpty() && estimatedNight != null) {
                 Spacer(Modifier.height(8.dp))
                 TextButton(
                     onClick = onRevert,
@@ -146,6 +163,38 @@ private fun ManualSleepSectionLabel(text: String) {
             ),
         color = TextTertiary,
     )
+}
+
+@Composable
+private fun EstimatedNightRow(
+    night: SleepWindow,
+    replaced: Boolean,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = MilkDeep.copy(alpha = if (replaced) 0.5f else 1f),
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Text(
+                text = "${night.start.format(timeFormatter)}  →  ${night.end.format(timeFormatter)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (replaced) TextTertiary else TextPrimary,
+                textDecoration = if (replaced) TextDecoration.LineThrough else null,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text =
+                    if (replaced) {
+                        "Replaced by the session you logged"
+                    } else {
+                        "${formatDuration(night.sleepMinutes)} · counted"
+                    },
+                style = MaterialTheme.typography.labelSmall,
+                color = TextTertiary,
+            )
+        }
+    }
 }
 
 @Composable
@@ -214,13 +263,13 @@ private fun AddSleepSessionForm(
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         TimeFieldCard(
             modifier = Modifier.weight(1f),
-            label = "Bedtime",
+            label = "Fell asleep",
             time = startTime,
             onClick = { editing = SleepTimeField.START },
         )
         TimeFieldCard(
             modifier = Modifier.weight(1f),
-            label = "Wake up",
+            label = "Woke up",
             time = endTime,
             onClick = { editing = SleepTimeField.END },
         )
@@ -238,10 +287,7 @@ private fun AddSleepSessionForm(
 
     Button(
         onClick = {
-            val zone = ZoneId.systemDefault()
-            val startMs = date.atTime(startTime).atZone(zone).toInstant().toEpochMilli()
-            val endDate = if (endTime <= startTime) date.plusDays(1) else date
-            val endMs = endDate.atTime(endTime).atZone(zone).toInstant().toEpochMilli()
+            val (startMs, endMs) = ManualSleepAnchoring.toEpochRange(date, startTime, endTime, ZoneId.systemDefault())
             onAdd(startMs, endMs)
         },
         enabled = durationMinutes > 0,
@@ -255,7 +301,7 @@ private fun AddSleepSessionForm(
     when (editing) {
         SleepTimeField.START ->
             SleepTimePickerDialog(
-                title = "Bedtime",
+                title = "Fell asleep",
                 initialHour = startHour,
                 initialMinute = startMinute,
                 onConfirm = { h, m ->
@@ -267,7 +313,7 @@ private fun AddSleepSessionForm(
             )
         SleepTimeField.END ->
             SleepTimePickerDialog(
-                title = "Wake up",
+                title = "Woke up",
                 initialHour = endHour,
                 initialMinute = endMinute,
                 onConfirm = { h, m ->

@@ -189,4 +189,65 @@ class GetWeeklySleepTrendsUseCaseTest {
         val summaries = listOf(summary("2026-09-29", 420, sleepOnsetMinutes = 300))
         assertEquals(300, useCase.computeBaselineOnset(summaries))
     }
+
+    // --- Lost rest and consistency, checked against hand-computed values ---
+
+    @Test
+    fun `lost rest adds every short night in full and stops at the 10h cap`() =
+        runTest {
+            // Seven 5h nights: 3h short each → 180, 360, 540, then capped at 600.
+            val summaries = (0 until 7).map { i -> summary("2026-09-${23 + i}", 300) }
+            val trends = buildUseCase(summaries)(LocalDate.of(2026, 9, 29)).first()
+            assertEquals(600, trends?.totalSleepDebtMinutes)
+        }
+
+    @Test
+    fun `a long night repays half of its surplus`() =
+        runTest {
+            // 6h40m → 80 short. 9h20m → 80 over, half of which (40) is repaid → 40.
+            val summaries = listOf(summary("2026-09-28", 400), summary("2026-09-29", 560))
+            val trends = buildUseCase(summaries)(LocalDate.of(2026, 9, 29)).first()
+            assertEquals(40, trends?.totalSleepDebtMinutes)
+        }
+
+    @Test
+    fun `a perfectly regular week scores 100 consistency`() =
+        runTest {
+            val summaries = (0 until 7).map { i -> summary("2026-09-${23 + i}", 420, sleepOnsetMinutes = 300) }
+            val trends = buildUseCase(summaries)(LocalDate.of(2026, 9, 29)).first()
+            assertEquals(100, trends?.consistencyScore)
+            assertEquals(420, trends?.totalSleepDebtMinutes) // 7 nights × 60 short
+        }
+
+    @Test
+    fun `consistency bottoms out when nights swing by more than two hours`() =
+        runTest {
+            // Durations alternate 200/560: spread around any baseline is at least 180 min,
+            // above the 120 min normalizer, so the duration score is 0. No onsets → weight 0.
+            val summaries =
+                listOf(
+                    summary("2026-09-26", 200),
+                    summary("2026-09-27", 560),
+                    summary("2026-09-28", 200),
+                    summary("2026-09-29", 560),
+                )
+            val trends = buildUseCase(summaries)(LocalDate.of(2026, 9, 29)).first()
+            assertEquals(0, trends?.consistencyScore)
+        }
+
+    @Test
+    fun `the backfill cap applies to the estimated night but not to logged naps`() =
+        runTest {
+            // 11h40m estimated night capped at 10h, plus a 1h30m logged nap → 11h30m.
+            val day =
+                DailySleepSummary(
+                    date = "2026-09-29",
+                    totalSleepMinutes = 790,
+                    awakenings = 0,
+                    isEstimated = true,
+                    napMinutes = 90,
+                )
+            val trends = buildUseCase(listOf(day))(LocalDate.of(2026, 9, 29)).first()
+            assertEquals(690, trends?.averageSleepMinutes)
+        }
 }

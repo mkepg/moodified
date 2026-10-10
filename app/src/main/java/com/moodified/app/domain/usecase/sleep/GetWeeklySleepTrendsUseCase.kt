@@ -33,7 +33,9 @@ class GetWeeklySleepTrendsUseCase
                 val cappedSummaries =
                     summaries.map { s ->
                         if (s.isEstimated) {
-                            s.copy(totalSleepMinutes = s.totalSleepMinutes.coerceAtMost(MAX_BACKFILL_SLEEP_MINUTES))
+                            // Cap only the estimated night; logged naps on top of it are real.
+                            val night = (s.totalSleepMinutes - s.napMinutes).coerceAtMost(MAX_BACKFILL_SLEEP_MINUTES)
+                            s.copy(totalSleepMinutes = night + s.napMinutes)
                         } else {
                             s
                         }

@@ -5,7 +5,6 @@ import android.os.PowerManager
 import android.util.Log
 import com.moodified.app.core.coordination.PollingJob
 import com.moodified.app.core.coordination.TrackingCoordinator
-import com.moodified.app.core.utils.SleepTimeUtils
 import com.moodified.app.data.local.dao.sleep.ManualSleepEntryDao
 import com.moodified.app.data.local.dao.sleep.SleepSegmentDao
 import com.moodified.app.data.local.datasource.SleepPreferencesDataSource
@@ -19,6 +18,8 @@ import com.moodified.app.domain.model.sleep.SleepSignal
 import com.moodified.app.domain.model.sleep.SleepStatus
 import com.moodified.app.domain.repository.SleepRepository
 import com.moodified.app.domain.usecase.sleep.CalculateSleepSegmentsUseCase
+import com.moodified.app.domain.usecase.sleep.DailySleepMerger
+import com.moodified.app.domain.usecase.sleep.ManualSleepAnchoring
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +34,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Duration
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -245,15 +245,16 @@ class SleepRepositoryImpl
 
                 (0L..6L).mapNotNull { daysBack ->
                     val d = endDate.minusDays(daysBack)
-                    val manual = manualEntities.filter { it.date == d.toString() }
-                    if (manual.isNotEmpty()) {
-                        buildManualSummary(d.toString(), manual)
-                    } else {
-                        val session =
-                            sessions.firstOrNull { s -> s.last().endTime.toLocalDate() == d }
-                                ?: return@mapNotNull null
-                        buildSummary(d.toString(), session)
-                    }
+                    val manual =
+                        manualEntities
+                            .filter { it.date == d.toString() }
+                            .map { ManualSleepAnchoring.correctLegacy(it.toDomain(), zone) }
+                    val estimate =
+                        sessions
+                            .firstOrNull { s -> s.last().endTime.toLocalDate() == d }
+                            ?.filter { it.status == SleepStatus.ASLEEP }
+                            ?.minByOrNull { it.startTime }
+                    DailySleepMerger.merge(d, estimate, manual, zone)
                 }
             }
         }
@@ -283,7 +284,10 @@ class SleepRepositoryImpl
 
         override fun observeManualEntriesForDate(date: LocalDate): Flow<List<ManualSleepEntry>> =
             manualSleepEntryDao.getEntriesForDate(date.toString())
-                .map { entities -> entities.map { it.toDomain() } }
+                .map { entities ->
+                    val zone = ZoneId.systemDefault()
+                    entities.map { ManualSleepAnchoring.correctLegacy(it.toDomain(), zone) }
+                }
 
         private fun groupIntoSessions(segments: List<SleepSegment>): List<List<SleepSegment>> {
             if (segments.isEmpty()) return emptyList()
@@ -299,44 +303,6 @@ class SleepRepositoryImpl
             }
             sessions.add(current)
             return sessions
-        }
-
-        private fun buildManualSummary(
-            date: String,
-            entries: List<ManualSleepEntryEntity>,
-        ): DailySleepSummary {
-            val zone = ZoneId.systemDefault()
-            val totalMinutes = entries.sumOf { ((it.endTimeMillis - it.startTimeMillis) / 60_000L).toInt() }
-            val earliest = entries.minByOrNull { it.startTimeMillis }
-            val sleepOnsetMinutes =
-                earliest?.let {
-                    val startLdt = Instant.ofEpochMilli(it.startTimeMillis).atZone(zone).toLocalDateTime()
-                    SleepTimeUtils.minutesSince6PM(startLdt)
-                }
-            return DailySleepSummary(
-                date = date,
-                totalSleepMinutes = totalMinutes,
-                awakenings = 0,
-                sleepOnsetMinutes = sleepOnsetMinutes,
-                isEstimated = false,
-            )
-        }
-
-        private fun buildSummary(
-            date: String,
-            segments: List<SleepSegment>,
-        ): DailySleepSummary? {
-            val asleep = segments.filter { it.status == SleepStatus.ASLEEP }.sortedBy { it.startTime }
-            if (asleep.isEmpty()) return null
-
-            val primary = asleep.first()
-            return DailySleepSummary(
-                date = date,
-                totalSleepMinutes = primary.totalSleepMinutes,
-                awakenings = primary.awakenings,
-                sleepOnsetMinutes = SleepTimeUtils.minutesSince6PM(primary.startTime),
-                isEstimated = true,
-            )
         }
 
         private fun publishSnapshot() {

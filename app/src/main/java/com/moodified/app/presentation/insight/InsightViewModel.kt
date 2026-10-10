@@ -224,12 +224,16 @@ class InsightViewModel
                     emptyList()
                 }
 
+            // Every day gets a point so a night with nothing detected can still be tapped and logged.
             val sleepPoints: List<SleepBarPoint> =
-                chartBundles.mapNotNull { b ->
-                    b.sleepSummary?.let {
-                            s ->
-                        SleepBarPoint(date = b.date, totalSleepMinutes = s.totalSleepMinutes, isEstimated = s.isEstimated)
-                    }
+                chartBundles.map { b ->
+                    val s = b.sleepSummary
+                    SleepBarPoint(
+                        date = b.date,
+                        totalSleepMinutes = s?.totalSleepMinutes ?: 0,
+                        hasManualEntries = s?.hasManualEntries == true,
+                        hasData = s != null,
+                    )
                 }
 
             val activityPoints: List<ActivityBarPoint> =
@@ -301,7 +305,7 @@ class InsightViewModel
 
             val moodReady = domainReadiness.mood.isReady
             val stepsByDate = activityPoints.associate { it.date to it.totalSteps }
-            val sleepMinutesByDate = sleepPoints.associate { it.date to it.totalSleepMinutes }
+            val sleepMinutesByDate = sleepPoints.filter { it.hasData }.associate { it.date to it.totalSleepMinutes }
             val screenMinutesByDate = screenPoints.associate { it.date to it.totalScreenMinutes }
             val lateNightByDate = screenPoints.associate { it.date to it.lateNightMinutes }
 
@@ -328,7 +332,6 @@ class InsightViewModel
                 daysWithData = daysWithDataCount,
                 moodStability = stability,
                 todayTimeline = timelineEvents,
-                weeklyMoodPoints = weeklyMoodPoints,
                 activityMoodInsight = activityMoodInsight,
                 sleepMoodInsight = sleepMoodInsight,
                 screenMoodInsight = screenMoodInsight,

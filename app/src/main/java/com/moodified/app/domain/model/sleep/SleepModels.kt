@@ -36,12 +36,28 @@ data class SleepSegment(
     val confidence: Int = 0,
 )
 
+/** A sleep interval and the minutes actually slept within it. */
+data class SleepWindow(
+    val start: LocalDateTime,
+    val end: LocalDateTime,
+    val sleepMinutes: Int,
+)
+
+/**
+ * One wake date's sleep. [totalSleepMinutes] includes [napMinutes]; [sleepOnsetMinutes] comes
+ * from the night only. [isEstimated] is true when the night itself is the inferred estimate,
+ * even if the user logged naps on top of it. [estimatedNight] is the inferred night whether or
+ * not a logged session replaced it.
+ */
 data class DailySleepSummary(
     val date: String,
     val totalSleepMinutes: Int,
     val awakenings: Int,
     val sleepOnsetMinutes: Int? = null,
     val isEstimated: Boolean = false,
+    val napMinutes: Int = 0,
+    val hasManualEntries: Boolean = false,
+    val estimatedNight: SleepWindow? = null,
 )
 
 data class SleepTrends(

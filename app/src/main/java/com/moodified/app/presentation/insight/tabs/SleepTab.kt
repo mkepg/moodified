@@ -1,6 +1,7 @@
 package com.moodified.app.presentation.insight.tabs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -121,8 +122,11 @@ fun SleepTab(
     )
 
     if (sleepCorrectionSheetDate != null) {
+        val daySummary = state.weeklyBundles.firstOrNull { it.date == sleepCorrectionSheetDate }?.sleepSummary
         ManualSleepEntrySheet(
             date = sleepCorrectionSheetDate,
+            estimatedNight = daySummary?.estimatedNight,
+            estimateReplaced = daySummary?.estimatedNight != null && !daySummary.isEstimated,
             existingEntries = sleepCorrectionEntries,
             onAdd = { startMs, endMs -> onAddManualEntry(sleepCorrectionSheetDate, startMs, endMs) },
             onDelete = onDeleteManualEntry,
@@ -209,14 +213,18 @@ private fun SleepTabBarChart(
                         ) {
                             val barColor = if (isGoalMet) Color(0xAA67C967) else ValenceNegative.copy(alpha = 0.6f)
 
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth(0.55f)
-                                        .fillMaxHeight(fraction)
-                                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                                        .background(barColor),
-                            )
+                            if (!pt.hasData) {
+                                NoSleepPlaceholderBar()
+                            } else {
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth(0.55f)
+                                            .fillMaxHeight(fraction)
+                                            .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                            .background(barColor),
+                                )
+                            }
                             if (pt.totalSleepMinutes > 0) {
                                 Column(
                                     modifier = Modifier.fillMaxHeight(fraction),
@@ -230,7 +238,7 @@ private fun SleepTabBarChart(
                                     )
                                 }
                             }
-                            if (!pt.isEstimated) {
+                            if (pt.hasManualEntries) {
                                 Box(
                                     modifier =
                                         Modifier
@@ -262,7 +270,7 @@ private fun SleepTabBarChart(
         }
         Spacer(Modifier.height(10.dp))
         Text(
-            text = "Tap any bar to add or correct that night's sleep.",
+            text = "Tap a day to log a nap or correct that night's sleep.",
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
             color = TextTertiary,
         )
@@ -281,6 +289,26 @@ private fun SleepTabBarChart(
                 )
             }
         }
+    }
+}
+
+/** Stands in for a day with no detected or logged sleep, so that day can still be tapped. */
+@Composable
+private fun NoSleepPlaceholderBar() {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth(0.55f)
+                .height(18.dp)
+                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                .border(1.dp, SageDim, RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "+",
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+            color = TextTertiary,
+        )
     }
 }
 
