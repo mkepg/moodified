@@ -118,6 +118,10 @@ class TrackingService : Service() {
             sleepRepository.stopTracking()
             interactionRepository.stopTracking()
 
+            // If this start came through startForegroundService() (e.g. an OS restart of the sticky
+            // service), Android kills the app unless startForeground() is called before stopping.
+            // Without the notification permission the call still succeeds; the notification is hidden.
+            startServiceForeground()
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
