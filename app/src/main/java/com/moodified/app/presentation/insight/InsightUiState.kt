@@ -64,12 +64,16 @@ data class MoodChartPoint(
     val isManual: Boolean,
 )
 
-/** One day on the sleep chart. [hasData] is false for a day with nothing detected or logged. */
+/**
+ * One night on the sleep chart, keyed by the date the user woke up. [hasData] is false when
+ * nothing was detected or logged; [isInProgress] is true for tonight before morning.
+ */
 data class SleepBarPoint(
     val date: LocalDate,
     val totalSleepMinutes: Int,
     val hasManualEntries: Boolean,
     val hasData: Boolean = true,
+    val isInProgress: Boolean = false,
 )
 
 data class ActivityBarPoint(

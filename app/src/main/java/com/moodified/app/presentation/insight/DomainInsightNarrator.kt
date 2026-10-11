@@ -128,10 +128,10 @@ class DomainInsightNarrator
             val best = tracked.maxByOrNull { it.value } ?: return null
             val worst = tracked.minByOrNull { it.value }
             if (worst == null || worst.key == best.key) {
-                return "Your longest night this week was ${DateTimeUtils.formatMinutes(best.value)} on ${best.key.dayName()}."
+                return "Your longest night this week was ${best.key.nightName()} at ${DateTimeUtils.formatMinutes(best.value)}."
             }
-            return "Your longest night was ${DateTimeUtils.formatMinutes(best.value)} on ${best.key.dayName()}, " +
-                "your shortest ${DateTimeUtils.formatMinutes(worst.value)} on ${worst.key.dayName()}."
+            return "Your longest night was ${best.key.nightName()} at ${DateTimeUtils.formatMinutes(best.value)}, " +
+                "your shortest ${worst.key.nightName()} at ${DateTimeUtils.formatMinutes(worst.value)}."
         }
 
         private fun activityHighlight(steps: Map<LocalDate, Int>): String? {
@@ -200,3 +200,6 @@ private fun Map<LocalDate, Int>.asOutcome(): Map<LocalDate, Float> {
 }
 
 private fun LocalDate.dayName(): String = format(DateTimeFormatter.ofPattern("EEEE", Locale.getDefault()))
+
+/** Sleep is keyed by wake date; name it by the night it began. */
+private fun LocalDate.nightName(): String = "${SleepNights.nightOf(this).dayName()} night"

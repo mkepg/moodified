@@ -30,6 +30,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -225,6 +226,7 @@ class InsightViewModel
                 }
 
             // Every day gets a point so a night with nothing detected can still be tapped and logged.
+            val now = LocalDateTime.now()
             val sleepPoints: List<SleepBarPoint> =
                 chartBundles.map { b ->
                     val s = b.sleepSummary
@@ -233,6 +235,7 @@ class InsightViewModel
                         totalSleepMinutes = s?.totalSleepMinutes ?: 0,
                         hasManualEntries = s?.hasManualEntries == true,
                         hasData = s != null,
+                        isInProgress = s == null && SleepNights.isInProgress(b.date, now),
                     )
                 }
 

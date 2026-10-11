@@ -126,7 +126,8 @@ class DomainInsightNarratorTest {
                 sleepMinutes = mapOf(day(1) to 549),
                 lateNightMinutes = emptyMap(),
             )
-        assertEquals("Your longest night this week was 9h 9m on Thursday.", result)
+        // Day 1 is Thursday, Oct 1: the night before it is Wednesday night.
+        assertEquals("Your longest night this week was Wednesday night at 9h 9m.", result)
     }
 
     @Test

@@ -41,6 +41,7 @@ import com.moodified.app.domain.model.sleep.ManualSleepEntry
 import com.moodified.app.domain.model.sleep.SleepTrends
 import com.moodified.app.presentation.insight.InsightUiState
 import com.moodified.app.presentation.insight.SleepBarPoint
+import com.moodified.app.presentation.insight.SleepNights
 import com.moodified.app.presentation.insight.components.InsightChartSurface
 import com.moodified.app.presentation.insight.components.InsightDomainEmptyState
 import com.moodified.app.presentation.insight.components.InsightDomainTemplate
@@ -67,7 +68,7 @@ fun SleepTab(
     val isReady = state.domainReadiness.sleep.isReady
     InsightDomainTemplate(
         title = "Sleep",
-        subtitle = "Last 7 days",
+        subtitle = "Last 7 nights",
         isTracking = isReady,
         status =
             if (!isReady) {
@@ -205,7 +206,11 @@ private fun SleepTabBarChart(
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f).fillMaxHeight().clickable { onBarTap(pt.date) },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable(enabled = !pt.isInProgress) { onBarTap(pt.date) },
                     ) {
                         Box(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -213,7 +218,9 @@ private fun SleepTabBarChart(
                         ) {
                             val barColor = if (isGoalMet) Color(0xAA67C967) else ValenceNegative.copy(alpha = 0.6f)
 
-                            if (!pt.hasData) {
+                            if (pt.isInProgress) {
+                                // Tonight hasn't finished: leave the slot empty.
+                            } else if (!pt.hasData) {
                                 NoSleepPlaceholderBar()
                             } else {
                                 Box(
@@ -230,28 +237,32 @@ private fun SleepTabBarChart(
                                     modifier = Modifier.fillMaxHeight(fraction),
                                     verticalArrangement = Arrangement.Top,
                                 ) {
-                                    Text(
-                                        text = DateTimeUtils.formatMinutes(pt.totalSleepMinutes),
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                                        color = TextTertiary,
+                                    Row(
                                         modifier = Modifier.offset(y = (-14).dp),
-                                    )
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        if (pt.hasManualEntries) {
+                                            Box(
+                                                modifier =
+                                                    Modifier
+                                                        .size(5.dp)
+                                                        .clip(CircleShape)
+                                                        .background(DeepSage),
+                                            )
+                                            Spacer(Modifier.width(3.dp))
+                                        }
+                                        Text(
+                                            text = DateTimeUtils.formatMinutes(pt.totalSleepMinutes),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                                            color = TextTertiary,
+                                        )
+                                    }
                                 }
-                            }
-                            if (pt.hasManualEntries) {
-                                Box(
-                                    modifier =
-                                        Modifier
-                                            .size(7.dp)
-                                            .clip(CircleShape)
-                                            .background(DeepSage)
-                                            .align(Alignment.TopCenter),
-                                )
                             }
                         }
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            text = pt.date.format(dayFmt),
+                            text = SleepNights.nightOf(pt.date).format(dayFmt),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                             color = TextTertiary,
                             textAlign = TextAlign.Center,
@@ -270,7 +281,7 @@ private fun SleepTabBarChart(
         }
         Spacer(Modifier.height(10.dp))
         Text(
-            text = "Tap a day to log a nap or correct that night's sleep.",
+            text = "Each bar is one night. Tap it to correct that night or log a nap.",
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
             color = TextTertiary,
         )

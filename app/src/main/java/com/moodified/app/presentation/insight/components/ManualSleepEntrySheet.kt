@@ -21,6 +21,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -53,6 +54,7 @@ import com.moodified.app.core.theme.TextTertiary
 import com.moodified.app.domain.model.sleep.ManualSleepEntry
 import com.moodified.app.domain.model.sleep.SleepWindow
 import com.moodified.app.domain.usecase.sleep.ManualSleepAnchoring
+import com.moodified.app.presentation.insight.SleepNights
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -61,6 +63,7 @@ import java.time.format.DateTimeFormatter
 
 private const val MINUTES_PER_DAY = 24 * 60
 private val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("h:mm a")
+private val nightRangeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,17 +93,23 @@ fun ManualSleepEntrySheet(
                     .padding(bottom = 32.dp),
         ) {
             Text(
-                text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                text = SleepNights.nightOf(date).format(DateTimeFormatter.ofPattern("EEEE")) + " night",
                 style = MaterialTheme.typography.headlineSmall.copy(fontFamily = DmSerifDisplay),
                 color = TextPrimary,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = SleepNights.nightOf(date).format(nightRangeFormatter) + " → " + date.format(nightRangeFormatter),
+                style = MaterialTheme.typography.labelMedium,
+                color = TextTertiary,
+            )
+            Spacer(Modifier.height(10.dp))
             Text(
                 text =
                     if (estimatedNight != null) {
                         "Naps add to your total. A session that overlaps the estimated night replaces it."
                     } else {
-                        "No sleep was detected for this day. Anything you log here becomes its sleep."
+                        "No sleep was detected for this night. Anything you log here becomes its sleep."
                     },
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
@@ -295,7 +304,8 @@ private fun AddSleepSessionForm(
         colors = ButtonDefaults.buttonColors(containerColor = DeepSage, contentColor = MilkWhite),
         modifier = Modifier.fillMaxWidth().height(52.dp),
     ) {
-        Text("Add session", style = MaterialTheme.typography.labelLarge)
+        // The theme's labelLarge hard-codes TextPrimary, which would override the button content color.
+        Text("Add session", style = MaterialTheme.typography.labelLarge, color = LocalContentColor.current)
     }
 
     when (editing) {
