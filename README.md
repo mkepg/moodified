@@ -27,7 +27,7 @@ Everything runs on-device. No accounts, no servers, no telemetry. Nothing leaves
   <tr>
     <td align="center"><img src="docs/screenshots/01-check-in.png" width="220" alt="Check-in home"/><br/><sub><b>Check-in home</b></sub></td>
     <td align="center"><img src="docs/screenshots/02-quick-log.png" width="220" alt="Quick log sheet with a note and a time picker"/><br/><sub><b>Quick log, note and time</b></sub></td>
-    <td align="center"><img src="docs/screenshots/03-insight-overview.png" width="220" alt="Insight overview with an inferred mood card and a driver chip"/><br/><sub><b>Insight overview and drivers</b></sub></td>
+    <td align="center"><img src="docs/screenshots/03-insight-overview.png" width="220" alt="Insight overview with an inferred mood card and its driver chips"/><br/><sub><b>Insight overview and drivers</b></sub></td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/04-insight-screen.png" width="220" alt="Sleep tab showing seven nights, one of them logged by hand"/><br/><sub><b>Sleep, with a logged night</b></sub></td>
