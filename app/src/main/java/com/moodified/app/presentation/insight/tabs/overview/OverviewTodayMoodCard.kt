@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -69,59 +71,69 @@ fun OverviewTodayMoodCard(mood: InferredMoodState) {
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(accentColor.copy(alpha = 0.25f)),
-                contentAlignment = Alignment.Center,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = overviewMoodIcon(mood.valence, mood.arousal),
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "TODAY'S ENERGY",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, letterSpacing = 1.2.sp, fontWeight = FontWeight.Bold),
-                    color = accentColor,
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = mood.interpretationLabel,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = TextPrimary,
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = mood.explainabilityString,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    lineHeight = 16.sp,
-                )
-                if (mood.scoringEvents.isNotEmpty() && !mood.isFallback) {
-                    Spacer(Modifier.height(8.dp))
-                    BehavioralDriverChips(events = mood.scoringEvents)
+                Box(
+                    modifier = Modifier.size(48.dp).clip(CircleShape).background(accentColor.copy(alpha = 0.25f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = overviewMoodIcon(mood.valence, mood.arousal),
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "TODAY'S ENERGY",
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 9.sp,
+                                letterSpacing = 1.2.sp,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                        color = accentColor,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = mood.interpretationLabel,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = TextPrimary,
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = mood.explainabilityString,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                        lineHeight = 16.sp,
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Surface(shape = RoundedCornerShape(20.dp), color = accentColor.copy(alpha = 0.20f)) {
+                    Text(
+                        text = "${mood.confidenceScore}%",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = TextSecondary,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    )
                 }
             }
-            Spacer(Modifier.width(12.dp))
-            Surface(shape = RoundedCornerShape(20.dp), color = accentColor.copy(alpha = 0.20f)) {
-                Text(
-                    text = "${mood.confidenceScore}%",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = TextSecondary,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                )
+            if (mood.scoringEvents.isNotEmpty() && !mood.isFallback) {
+                Spacer(Modifier.height(10.dp))
+                BehavioralDriverChips(events = mood.scoringEvents)
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BehavioralDriverChips(events: List<ScoringEvent>) {
     val topEvents =
@@ -132,12 +144,15 @@ private fun BehavioralDriverChips(events: List<ScoringEvent>) {
 
     if (topEvents.isEmpty()) return
 
-    Row(
+    // Driver descriptions are sentences, so two of them rarely fit on one line and a plain
+    // Row leaves the later chips no width to draw in. FlowRow wraps them instead.
+    FlowRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         topEvents.forEach { event ->
             BehavioralChip(event)
@@ -175,12 +190,20 @@ private fun BehavioralChip(event: ScoringEvent) {
                 tint = textColor,
                 modifier = Modifier.size(14.dp),
             )
+            // The arrow is a separate Text so a long description ellipsizes around it
+            // instead of truncating the direction away.
             Text(
-                text = "${event.description.replaceFirstChar { it.uppercase() }} $arrow",
+                text = event.description.replaceFirstChar { it.uppercase() },
                 style = MaterialTheme.typography.labelSmall,
                 color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Text(
+                text = arrow,
+                style = MaterialTheme.typography.labelSmall,
+                color = textColor,
             )
         }
     }
