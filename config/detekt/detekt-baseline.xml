@@ -111,7 +111,7 @@
     <ID>FunctionNaming:OverviewTab.kt$@Composable private fun OverviewSectionHeader(title: String)</ID>
     <ID>FunctionNaming:OverviewTodayMoodCard.kt$@Composable fun OverviewTodayMoodCard(mood: InferredMoodState)</ID>
     <ID>FunctionNaming:OverviewTodayMoodCard.kt$@Composable private fun BehavioralChip(event: ScoringEvent)</ID>
-    <ID>FunctionNaming:OverviewTodayMoodCard.kt$@Composable private fun BehavioralDriverChips(events: List&lt;ScoringEvent&gt;)</ID>
+    <ID>FunctionNaming:OverviewTodayMoodCard.kt$@OptIn(ExperimentalLayoutApi::class) @Composable private fun BehavioralDriverChips(events: List&lt;ScoringEvent&gt;)</ID>
     <ID>FunctionNaming:PermissionsActionCard.kt$@Composable fun PermissionsActionCard( isVisible: Boolean, title: String, description: String, buttonLabel: String, onRequest: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:PrivacyScreen.kt$@Composable fun PrivacyScreen( onBack: () -&gt; Unit, viewModel: PrivacyViewModel = hiltViewModel(), )</ID>
     <ID>FunctionNaming:PrivacyScreen.kt$@Composable private fun ActionRow( icon: ImageVector, title: String, description: String, inProgress: Boolean = false, destructive: Boolean = false, onClick: () -&gt; Unit, )</ID>
